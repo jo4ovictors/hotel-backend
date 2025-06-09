@@ -1,4 +1,4 @@
-package edu.ifmg.hotelbao;
+package br.edu.ifmg.hotelbao;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

@@ -1,0 +1,32 @@
+package br.edu.ifmg.hotelbao.repository;
+
+import br.edu.ifmg.hotelbao.entities.User;
+import br.edu.ifmg.hotelbao.projections.UserDetailsProjection;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface UserRepository extends JpaRepository<User, Long> {
+
+    User findByLogin(String login);
+    User findByLoginAndPassword(String login, String password);
+
+    @Query(nativeQuery = true,
+           value = """
+                   SELECT u.login as username,
+                          u.password,
+                          r.id as roleId,
+                          r.authority
+                   
+                   FROM tb_user u
+                   INNER JOIN tb_user_role ur ON u.id = ur.user_id
+                   INNER JOIN tb_role r ON r.id = ur.role_id
+                   WHERE u.login = :username
+                   """
+    )
+    List<UserDetailsProjection> searchUserAndRoleByLogin(String username);
+
+}
