@@ -1,10 +1,8 @@
 package br.edu.ifmg.hotelbao.repository;
 
-import br.edu.ifmg.hotelbao.entities.Role;
+import br.edu.ifmg.hotelbao.entities.Address;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface RoleRepository extends JpaRepository<Role, Long> {
-    public Role findByAuthority(String authority);
-}
+public interface AddressRepository extends JpaRepository<Address, Long> { }

@@ -1,7 +1,6 @@
 package br.edu.ifmg.hotelbao.dtos;
 
 import br.edu.ifmg.hotelbao.entities.User;
-import jakarta.persistence.*;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -9,44 +8,37 @@ import java.util.Set;
 
 public class UserDTO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String name;
-
-    @Column(unique = true)
+    private String firstName;
+    private String lastName;
     private String email;
-
-    @Column(unique = true)
     private String login;
-
-    @Column(unique = true)
     private String phone;
 
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(name = "tb_user_role",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
+    private AddressDTO address;
     private Set<RoleDTO> roles = new HashSet<>();
 
     public UserDTO() {
     }
 
-    public UserDTO(Long id, String name, String email, String login, String phone) {
+    public UserDTO(Long id, String firstName, String lastName, String email, String login, String phone, AddressDTO address) {
         this.id = id;
-        this.name = name;
+        this.firstName = firstName;
+        this.lastName = lastName;
         this.email = email;
         this.login = login;
         this.phone = phone;
+        this.address = address;
     }
 
     public UserDTO(User entity) {
         this.id = entity.getId();
-        this.name = entity.getName();
+        this.firstName = entity.getFirstName();
+        this.lastName = entity.getLastName();
         this.email = entity.getEmail();
         this.login = entity.getLogin();
         this.phone = entity.getPhone();
+        this.address = entity.getAddress() != null ? new AddressDTO(entity.getAddress()) : null;
 
         entity.getRoles().forEach(role -> roles.add(new RoleDTO(role)));
     }
@@ -59,12 +51,20 @@ public class UserDTO {
         this.id = id;
     }
 
-    public String getName() {
-        return name;
+    public String getFirstName() {
+        return firstName;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
 
     public String getEmail() {
@@ -91,6 +91,14 @@ public class UserDTO {
         this.phone = phone;
     }
 
+    public AddressDTO getAddress() {
+        return address;
+    }
+
+    public void setAddress(AddressDTO address) {
+        this.address = address;
+    }
+
     public Set<RoleDTO> getRoles() {
         return roles;
     }
@@ -114,12 +122,13 @@ public class UserDTO {
     public String toString() {
         return "UserDTO{" +
                 "id=" + id +
-                ", name='" + name + '\'' +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
                 ", email='" + email + '\'' +
                 ", login='" + login + '\'' +
                 ", phone='" + phone + '\'' +
+                ", address=" + address +
                 ", roles=" + roles +
                 '}';
     }
-
 }

@@ -47,7 +47,7 @@ public class StayResponseDTO {
     public StayResponseDTO(Stay entity) {
         this.id = entity.getId();
         this.userId = entity.getUser().getId();
-        this.userName = entity.getUser().getName();
+        this.userName = entity.getUser().getFirstName();
         this.roomId = entity.getRoom().getId();
         this.roomDescription = entity.getRoom().getDescription();
         this.checkIn = entity.getCheckIn();

@@ -8,6 +8,7 @@ import br.edu.ifmg.hotelbao.services.StayService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +21,7 @@ public class StayResource {
     private StayService stayService;
 
     @PostMapping
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_EMPLOYEE')")
     public ResponseEntity<StayResponseDTO> create(@RequestBody StayCreateDTO dto) {
         StayResponseDTO created = stayService.createStay(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);

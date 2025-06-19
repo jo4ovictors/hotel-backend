@@ -16,7 +16,8 @@ public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String name;
+    private String firstName;
+    private String lastName;
 
     @Column(unique = true)
     private String email;
@@ -35,25 +36,33 @@ public class User implements UserDetails {
     )
     private Set<Role> roles = new HashSet<>();
 
+    @OneToOne(cascade = CascadeType.ALL, optional = true)
+    @JoinColumn(name = "address_id", referencedColumnName = "id")
+    private Address address;
+
     public User() {
     }
 
-    public User(Long id, String name, String email, String login, String password, String phone) {
+    public User(Long id, String firstName, String lastName, String email, String login, String password, String phone, Address address) {
         this.id = id;
-        this.name = name;
+        this.firstName = firstName;
+        this.lastName = lastName;
         this.email = email;
         this.login = login;
         this.password = password;
         this.phone = phone;
+        this.address = address;
     }
 
     public User(User entity, Set<Role> roles) {
         this.id = entity.getId();
-        this.name = entity.getName();
+        this.firstName = entity.getFirstName();
+        this.lastName = entity.getLastName();
         this.email = entity.getEmail();
         this.login = entity.getLogin();
         this.password = entity.getPassword();
         this.phone = entity.getPhone();
+        this.address = entity.getAddress();
         this.roles = roles;
     }
 
@@ -65,12 +74,20 @@ public class User implements UserDetails {
         this.id = id;
     }
 
-    public String getName() {
-        return name;
+    public String getFirstName() {
+        return firstName;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
 
     public String getEmail() {
@@ -111,6 +128,14 @@ public class User implements UserDetails {
 
     public void setRoles(Set<Role> roles) {
         this.roles = roles;
+    }
+
+    public Address getAddress() {
+        return address;
+    }
+
+    public void setAddress(Address address) {
+        this.address = address;
     }
 
     @Override
