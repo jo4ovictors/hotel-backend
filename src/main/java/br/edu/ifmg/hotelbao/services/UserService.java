@@ -16,8 +16,6 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -43,9 +41,13 @@ public class UserService implements UserDetailsService {
     private PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
-    public Page<UserDTO> findAll(Pageable pageable) {
-        return userRepository.findAll(pageable).map(UserDTO::new);
+    public List<UserDTO> findAll() {
+        return userRepository.findAll()
+                .stream()
+                .map(UserDTO::new)
+                .toList();
     }
+
 
     @Transactional(readOnly = true)
     public UserDTO findById(Long id) {

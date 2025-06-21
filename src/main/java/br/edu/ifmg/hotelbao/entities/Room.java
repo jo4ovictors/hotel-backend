@@ -23,6 +23,7 @@ public class Room {
     private BigDecimal price;
 
     private String imageUrl;
+    private Boolean isActive = true;
     private Instant createdAt;
     private Instant updateAt;
 
@@ -79,6 +80,14 @@ public class Room {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public Boolean getActive() {
+        return isActive;
+    }
+
+    public void setActive(Boolean active) {
+        isActive = active;
     }
 
     @PrePersist

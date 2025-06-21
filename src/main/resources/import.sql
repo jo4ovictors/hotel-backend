@@ -38,3 +38,11 @@ UPDATE tb_user SET address_id = 3 WHERE id = 3;
 
 UPDATE tb_user SET address_id = 4 WHERE id = 4;
 
+
+INSERT INTO tb_room (description, price, image_url, is_active) VALUES ('Suíte Master com hidromassagem e vista panorâmica', 450.00, 'https://example.com/img1.jpg', true);
+
+INSERT INTO tb_room (description, price, image_url, is_active) VALUES ('Quarto Standard com cama de casal', 250.00, 'https://example.com/img2.jpg', true);
+
+INSERT INTO tb_room (description, price, image_url, is_active) VALUES ('Suíte Família com dois quartos conjugados', 600.00, 'https://example.com/img3.jpg', true);
+
+INSERT INTO tb_room (description, price, image_url, is_active) VALUES ('Quarto Econômico com cama de solteiro', 150.00, 'https://example.com/img4.jpg', true);

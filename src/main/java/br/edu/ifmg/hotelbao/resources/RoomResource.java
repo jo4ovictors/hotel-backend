@@ -49,10 +49,10 @@ public class RoomResource {
         return ResponseEntity.ok().body(dto);
     }
 
-    @DeleteMapping(value = {"/id"})
+    @DeleteMapping(value = "/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        roomService.delete(id);
+        roomService.deleteRoom(id);
         return ResponseEntity.noContent().build();
     }
 

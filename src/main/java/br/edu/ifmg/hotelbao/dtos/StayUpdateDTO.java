@@ -1,18 +1,17 @@
 package br.edu.ifmg.hotelbao.dtos;
 
 import br.edu.ifmg.hotelbao.entities.Stay;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import jakarta.persistence.*;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Objects;
 
-public class StayCreateDTO {
+public class StayUpdateDTO {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
 
     private Long userId;
     private Long roomId;
@@ -20,31 +19,20 @@ public class StayCreateDTO {
     private LocalDate checkIn;
     private LocalDate checkOut;
 
-    public StayCreateDTO() {
+    public StayUpdateDTO() {
     }
 
-    public StayCreateDTO(Long id, Long userId, Long roomId, LocalDate checkIn, LocalDate checkOut) {
-        this.id = id;
-        this.userId = userId;
+    public StayUpdateDTO(Long roomId, LocalDate checkIn, LocalDate checkOut) {
         this.roomId = roomId;
         this.checkIn = checkIn;
         this.checkOut = checkOut;
     }
 
-    public StayCreateDTO(Stay entity) {
-        this.id = entity.getId();
+    public StayUpdateDTO(Stay entity) {
         this.userId = entity.getUser().getId();
         this.roomId = entity.getRoom().getId();
         this.checkIn = entity.getCheckIn();
         this.checkOut = entity.getCheckOut();
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public Long getUserId() {
@@ -80,20 +68,8 @@ public class StayCreateDTO {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof StayCreateDTO that)) return false;
-        return Objects.equals(id, that.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(id);
-    }
-
-    @Override
     public String toString() {
         return "StayCreateDTO{" +
-                "id=" + id +
                 ", userId=" + userId +
                 ", roomId=" + roomId +
                 ", checkIn=" + checkIn +

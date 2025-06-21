@@ -26,7 +26,7 @@ public class RoomService {
 
     @Transactional(readOnly = true)
     public RoomDTO findById(Long id) {
-        Room entity = roomRepository.findById(id).orElseThrow(() -> new ResourceNotFound("[!] -> Room not found!"));
+        Room entity = roomRepository.findActiveById(id).orElseThrow(() -> new ResourceNotFound("[!] -> Room not found!"));
         return new RoomDTO(entity);
     }
 
@@ -41,29 +41,22 @@ public class RoomService {
 
     @Transactional
     public RoomDTO update(Long id, RoomDTO dto) {
-        try {
-            Room entity = roomRepository.getReferenceById(id);
-            copyDTOToEntity(dto, entity);
-            entity = roomRepository.save(entity);
-            return new RoomDTO(entity);
-        } catch (EntityNotFoundException e) {
-            throw new ResourceNotFound("[!] -> Room not foud " + id + "!");
-        }
+        Room entity = roomRepository.findActiveById(id)
+                .orElseThrow(() -> new ResourceNotFound("[!] -> Room not found or inactive. ID: " + id));
 
+        copyDTOToEntity(dto, entity);
+        entity = roomRepository.save(entity);
+        return new RoomDTO(entity);
     }
 
     @Transactional
-    public void delete(Long id) {
-        if (!roomRepository.existsById(id)) {
-            throw new ResourceNotFound("[!] -> Resource not found!");
-        }
-
-        try {
-            roomRepository.deleteById(id);
-        } catch (DataIntegrityViolationException e) {
-            throw new ResourceNotFound("[!] -> Integrity Violation!");
-        }
+    public void deleteRoom(Long id) {
+        Room room = roomRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("[!] -> Room not found!"));
+        room.setActive(false);
+        roomRepository.save(room);
     }
+
 
     private void copyDTOToEntity(RoomDTO dto, Room entity) {
         entity.setDescription(dto.getDescription());
