@@ -4,8 +4,6 @@ import br.edu.ifmg.hotelbao.dtos.RoomDTO;
 import br.edu.ifmg.hotelbao.dtos.StayCreateDTO;
 import br.edu.ifmg.hotelbao.dtos.UserInsertDTO;
 import br.edu.ifmg.hotelbao.entities.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
