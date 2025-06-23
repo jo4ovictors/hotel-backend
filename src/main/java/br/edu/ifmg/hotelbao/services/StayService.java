@@ -31,21 +31,39 @@ public class StayService {
     @Autowired
     private RoomRepository roomRepository;
 
+    public List<StayResponseDTO> findAll() {
+        return stayRepository.findAll().stream()
+                .map(StayResponseDTO::new)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public StayResponseDTO findById(Long id) {
+        Stay entity = stayRepository.findById(id).orElseThrow(() -> new ResourceNotFound("[!] -> Stay not found!"));
+        return new StayResponseDTO(entity);
+    }
+
+    public List<StayResponseDTO> findByUser(Long userid) {
+        return stayRepository.findByUserId(userid).stream()
+                .map(StayResponseDTO::new)
+                .toList();
+    }
+
     @Transactional
     public StayResponseDTO createStay(@NotNull StayCreateDTO dto) {
 
         User user = userRepository.findById(dto.getUserId())
-                .orElseThrow(() -> new RuntimeException("[!] -> User not found!"));
+                .orElseThrow(() -> new ResourceNotFound("[!] -> User not found!"));
 
         Room room = roomRepository.findActiveById(dto.getRoomId())
-                .orElseThrow(() -> new RuntimeException("[!] -> Room not found!"));
+                .orElseThrow(() -> new ResourceNotFound("[!] -> Room not found!"));
 
         if (stayRepository.isRoomOccupied(dto.getRoomId(), dto.getCheckIn(), dto.getCheckOut(),null)) {
-            throw new RuntimeException("[!] -> Room is already occupied in this period.");
+            throw new ResourceNotFound("[!] -> Room is already occupied in this period.");
         }
 
         if (dto.getCheckOut().isBefore(dto.getCheckIn()) || dto.getCheckOut().isEqual(dto.getCheckIn())) {
-            throw new RuntimeException("[!] -> Check-out must be after check-in.");
+            throw new ResourceNotFound("[!] -> Check-out must be after check-in.");
         }
 
         long dias = ChronoUnit.DAYS.between(dto.getCheckIn(), dto.getCheckOut());
@@ -53,6 +71,36 @@ public class StayService {
 
         Stay stay = new Stay();
         stay.setUser(user);
+        stay.setRoom(room);
+        stay.setCheckIn(dto.getCheckIn());
+        stay.setCheckOut(dto.getCheckOut());
+        stay.setPrice(totalPrice);
+
+        Stay saved = stayRepository.save(stay);
+        return new StayResponseDTO(saved);
+    }
+
+    @Transactional
+    public StayResponseDTO update(Long id, @NotNull StayUpdateDTO dto) {
+        Stay stay = stayRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFound("[!] -> Stay not found!"));
+
+        Room room = roomRepository.findActiveById(dto.getRoomId())
+                .orElseThrow(() -> new ResourceNotFound("[!] -> Room not found!"));
+
+        if (dto.getCheckOut().isBefore(dto.getCheckIn()) || dto.getCheckOut().isEqual(dto.getCheckIn())) {
+            throw new ResourceNotFound("[!] -> Check-out must be after check-in.");
+        }
+
+        boolean isOccupied = stayRepository.isRoomOccupied(dto.getRoomId(), dto.getCheckIn(), dto.getCheckOut(), id);
+        if (isOccupied) {
+            throw new ResourceNotFound("[!] -> Room is already occupied in this period.");
+        }
+
+        long dias = ChronoUnit.DAYS.between(dto.getCheckIn(), dto.getCheckOut());
+
+        BigDecimal totalPrice = room.getPrice().multiply(BigDecimal.valueOf(dias));
+
         stay.setRoom(room);
         stay.setCheckIn(dto.getCheckIn());
         stay.setCheckOut(dto.getCheckOut());
@@ -75,59 +123,15 @@ public class StayService {
         }
     }
 
-    @Transactional
-    public StayResponseDTO update(Long id, @NotNull StayUpdateDTO dto) {
-        Stay stay = stayRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("[!] -> Stay not found!"));
-
-        Room room = roomRepository.findActiveById(dto.getRoomId())
-                .orElseThrow(() -> new RuntimeException("[!] -> Room not found!"));
-
-        if (dto.getCheckOut().isBefore(dto.getCheckIn()) || dto.getCheckOut().isEqual(dto.getCheckIn())) {
-            throw new RuntimeException("[!] -> Check-out must be after check-in.");
-        }
-
-        boolean isOccupied = stayRepository.isRoomOccupied(dto.getRoomId(), dto.getCheckIn(), dto.getCheckOut(), id);
-        if (isOccupied) {
-            throw new RuntimeException("[!] -> Room is already occupied in this period.");
-        }
-
-        long dias = ChronoUnit.DAYS.between(dto.getCheckIn(), dto.getCheckOut());
-
-        BigDecimal totalPrice = room.getPrice().multiply(BigDecimal.valueOf(dias));
-
-        stay.setRoom(room);
-        stay.setCheckIn(dto.getCheckIn());
-        stay.setCheckOut(dto.getCheckOut());
-        stay.setPrice(totalPrice);
-
-        Stay saved = stayRepository.save(stay);
-        return new StayResponseDTO(saved);
-    }
-
-
-
-    public List<StayResponseDTO> findByUser(Long userid) {
-        return stayRepository.findByUserId(userid).stream()
-                .map(StayResponseDTO::new)
-                .toList();
-    }
-
-    public List<StayResponseDTO> findAll() {
-        return stayRepository.findAll().stream()
-                .map(StayResponseDTO::new)
-                .toList();
-    }
-
     public StayReportDTO findCheapestStay(Long userId) {
         Stay stay = stayRepository.findTopByUserIdOrderByPriceAsc(userId)
-                .orElseThrow(() -> new RuntimeException("[!] -> Nenhuma estadia encontrada!"));
+                .orElseThrow(() -> new ResourceNotFound("[!] -> Nenhuma estadia encontrada!"));
         return new StayReportDTO(stay);
     }
 
     public StayReportDTO findMostExpensiveStay(Long userId) {
         Stay stay = stayRepository.findTopByUserIdOrderByPriceDesc(userId)
-                .orElseThrow(() -> new RuntimeException("[!] -> Nenhuma estadia encontrada!"));
+                .orElseThrow(() -> new ResourceNotFound("[!] -> Nenhuma estadia encontrada!"));
         return new StayReportDTO(stay);
     }
 

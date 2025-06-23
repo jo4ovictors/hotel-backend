@@ -12,7 +12,6 @@ public class StayUpdateDTO {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-
     private Long userId;
     private Long roomId;
 

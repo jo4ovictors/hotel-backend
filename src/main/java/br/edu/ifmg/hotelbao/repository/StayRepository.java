@@ -1,5 +1,6 @@
 package br.edu.ifmg.hotelbao.repository;
 
+import br.edu.ifmg.hotelbao.dtos.StayItemDTO;
 import br.edu.ifmg.hotelbao.entities.Stay;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -39,4 +40,18 @@ public interface StayRepository extends JpaRepository<Stay, Long> {
                     """
     )
     BigDecimal findTotalAmountSpentByUser(Long userId);
+
+    @Query("""
+    SELECT new br.edu.ifmg.hotelbao.dtos.StayItemDTO(
+        r.description,
+        s.price,
+        s.checkIn,
+        s.checkOut
+    )
+    FROM Stay s
+    JOIN s.room r
+    WHERE s.user.id = :userId
+    """)
+    List<StayItemDTO> findStayItemsByUserId(Long userId);
+
 }

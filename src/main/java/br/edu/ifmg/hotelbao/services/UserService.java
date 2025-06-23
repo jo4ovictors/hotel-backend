@@ -1,15 +1,13 @@
 package br.edu.ifmg.hotelbao.services;
 
-import br.edu.ifmg.hotelbao.dtos.AddressDTO;
-import br.edu.ifmg.hotelbao.dtos.RoleDTO;
-import br.edu.ifmg.hotelbao.dtos.UserDTO;
-import br.edu.ifmg.hotelbao.dtos.UserInsertDTO;
+import br.edu.ifmg.hotelbao.dtos.*;
 import br.edu.ifmg.hotelbao.entities.Address;
 import br.edu.ifmg.hotelbao.entities.Role;
 import br.edu.ifmg.hotelbao.entities.User;
 import br.edu.ifmg.hotelbao.projections.UserDetailsProjection;
 import br.edu.ifmg.hotelbao.repository.AddressRepository;
 import br.edu.ifmg.hotelbao.repository.RoleRepository;
+import br.edu.ifmg.hotelbao.repository.StayRepository;
 import br.edu.ifmg.hotelbao.repository.UserRepository;
 import br.edu.ifmg.hotelbao.services.exceptions.ResourceNotFound;
 import jakarta.persistence.EntityNotFoundException;
@@ -23,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -38,6 +37,9 @@ public class UserService implements UserDetailsService {
     private RoleRepository roleRepository;
 
     @Autowired
+    private StayRepository stayRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
@@ -47,7 +49,6 @@ public class UserService implements UserDetailsService {
                 .map(UserDTO::new)
                 .toList();
     }
-
 
     @Transactional(readOnly = true)
     public UserDTO findById(Long id) {
@@ -137,11 +138,11 @@ public class UserService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    public UserDetails loadUserByUsername(String username) throws ResourceNotFound {
         List<UserDetailsProjection> result = userRepository.searchUserAndRoleByLogin(username);
 
         if (result.isEmpty()) {
-            throw new UsernameNotFoundException("[!] -> User not found: " + username + "!");
+            throw new ResourceNotFound("[!] -> User not found: " + username + "!");
         }
 
         return buildUserWithRoles(result);
@@ -160,4 +161,23 @@ public class UserService implements UserDetailsService {
         return new UserDTO(novo);
     }
 
+    public InvoiceDTO newInvoice(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFound("[!] -> User not found!"));
+
+        UserInvoiceDTO uerInvoiceDTO = new UserInvoiceDTO(user);
+
+        List<StayItemDTO> stays = stayRepository.findStayItemsByUserId(userId);
+
+        if (stays.isEmpty()) {
+            throw new ResourceNotFound("[!] -> The user does not have any stays for the invoice!");
+        }
+
+        BigDecimal total = stays.stream()
+                .filter(e -> e.getDescription() != null && e.getPrice() != null)
+                .map(StayItemDTO::getPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return new InvoiceDTO(uerInvoiceDTO, stays, total);
+    }
 }

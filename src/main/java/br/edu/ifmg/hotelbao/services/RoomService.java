@@ -52,7 +52,7 @@ public class RoomService {
     @Transactional
     public void deleteRoom(Long id) {
         Room room = roomRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("[!] -> Room not found!"));
+                .orElseThrow(() -> new ResourceNotFound("[!] -> Room not found!"));
         room.setActive(false);
         roomRepository.save(room);
     }

@@ -5,8 +5,10 @@ import br.edu.ifmg.hotelbao.services.exceptions.DatabaseException;
 import br.edu.ifmg.hotelbao.services.exceptions.EmailException;
 import br.edu.ifmg.hotelbao.services.exceptions.ResourceNotFound;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -41,6 +43,27 @@ public class ResourceExceptionListener {
         return ResponseEntity.status(status).body(error);
     }
 
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<StandardError> handleDataIntegrityViolation(
+            DataIntegrityViolationException ex,
+            HttpServletRequest request) {
+
+        HttpStatus status = HttpStatus.CONFLICT;
+
+        String rootMessage = (ex.getRootCause() != null)
+                ? ex.getRootCause().getMessage()
+                : ex.getMessage();
+
+        StandardError err = new StandardError();
+        err.setTimestamp(Instant.now());
+        err.setStatus(status.value());
+        err.setError("Data Integrity Violation");
+        err.setMessage(rootMessage);
+        err.setPath(request.getRequestURI());
+
+        return ResponseEntity.status(status).body(err);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ValidationError> methodArgumentNotValidException(MethodArgumentNotValidException ex, HttpServletRequest request) {
         HttpStatus status = HttpStatus.UNPROCESSABLE_ENTITY;
@@ -68,5 +91,33 @@ public class ResourceExceptionListener {
         error.setPath(request.getRequestURI());
         return ResponseEntity.status(status).body(error);
     }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<StandardError> accessDenied(AccessDeniedException ex, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.FORBIDDEN;
+        StandardError error = new StandardError();
+        error.setTimestamp(Instant.now());
+        error.setStatus(status.value());
+        error.setError("Forbidden");
+        error.setMessage("You do not have permission to access this resource.");
+        error.setPath(request.getRequestURI());
+        return ResponseEntity.status(status).body(error);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<StandardError> handleGenericException(Exception ex, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        StandardError error = new StandardError();
+        error.setTimestamp(Instant.now());
+        error.setStatus(status.value());
+        error.setError("Internal Server Error");
+        error.setMessage(ex.getMessage());
+        error.setPath(request.getRequestURI());
+
+        return ResponseEntity.status(status).body(error);
+    }
+
+
 
 }

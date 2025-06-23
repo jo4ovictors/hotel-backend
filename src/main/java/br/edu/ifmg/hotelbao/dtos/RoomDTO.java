@@ -2,27 +2,34 @@ package br.edu.ifmg.hotelbao.dtos;
 
 import br.edu.ifmg.hotelbao.entities.Room;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import org.springframework.hateoas.RepresentationModel;
 
 import java.math.BigDecimal;
 import java.util.Objects;
 
-public class RoomDTO {
+@Schema(name = "RoomDTO", description = "Data Transfer Object for Room entity containing information such as description, price and image URL.")
+public class RoomDTO extends RepresentationModel<RoomDTO> {
 
+    @Schema(description = "Unique identifier of the room", example = "1", accessMode = Schema.AccessMode.READ_ONLY)
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Schema(description = "Detailed textual description of the room", example = "Deluxe room with ocean view.")
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Schema(description = "Daily price for booking the room", example = "199.99", type = "number", format = "bigdecimal")
     @Column(precision = 10, scale = 2)
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private BigDecimal price;
 
+    @Schema(description = "URL of the image representing the room", example = "https://example.com/images/room.jpg")
     private String imageUrl;
 
     public RoomDTO() {
@@ -85,13 +92,4 @@ public class RoomDTO {
         return Objects.hashCode(id);
     }
 
-    @Override
-    public String toString() {
-        return "RoomDTO{" +
-                "id=" + id +
-                ", description='" + description + '\'' +
-                ", price=" + price +
-                ", imageUrl='" + imageUrl + '\'' +
-                '}';
-    }
 }

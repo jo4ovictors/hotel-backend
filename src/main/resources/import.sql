@@ -46,3 +46,14 @@ INSERT INTO tb_room (description, price, image_url, is_active) VALUES ('Quarto S
 INSERT INTO tb_room (description, price, image_url, is_active) VALUES ('Suíte Família com dois quartos conjugados', 600.00, 'https://example.com/img3.jpg', true);
 
 INSERT INTO tb_room (description, price, image_url, is_active) VALUES ('Quarto Econômico com cama de solteiro', 150.00, 'https://example.com/img4.jpg', true);
+
+
+INSERT INTO tb_stay (user_id, room_id, check_in, check_out, price) VALUES (1, 1, '2025-06-01', '2025-06-05', 500.00);
+
+INSERT INTO tb_stay (user_id, room_id, check_in, check_out, price) VALUES (1, 2, '2025-06-10', '2025-06-12', 300.00);
+
+INSERT INTO tb_stay (user_id, room_id, check_in, check_out, price) VALUES (2, 1, '2025-06-15', '2025-06-18', 450.00);
+
+INSERT INTO tb_stay (user_id, room_id, check_in, check_out, price) VALUES (3, 3, '2025-06-20', '2025-06-22', 400.00);
+
+INSERT INTO tb_stay (user_id, room_id, check_in, check_out, price) VALUES (4, 2, '2025-06-25', '2025-06-28', 600.00);

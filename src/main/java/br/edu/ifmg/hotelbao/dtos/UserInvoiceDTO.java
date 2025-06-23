@@ -2,43 +2,37 @@ package br.edu.ifmg.hotelbao.dtos;
 
 import br.edu.ifmg.hotelbao.entities.User;
 import io.swagger.v3.oas.annotations.media.Schema;
-import org.springframework.hateoas.RepresentationModel;
 
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
-@Schema(description = "Data Transfer Object representing a user in the system")
-public class UserDTO extends RepresentationModel<UserDTO> {
+@Schema(name = "UserInvoiceDTO", description = "Data Transfer Object representing user information for invoicing purposes")
+public class UserInvoiceDTO {
 
     @Schema(description = "Unique identifier of the user", example = "1")
     private Long id;
 
-    @Schema(description = "First name of the user", example = "John")
+    @Schema(description = "User's first name", example = "John")
     private String firstName;
 
-    @Schema(description = "Last name of the user", example = "Doe")
+    @Schema(description = "User's last name", example = "Doe")
     private String lastName;
 
-    @Schema(description = "Email address of the user", example = "john.doe@example.com")
+    @Schema(description = "User's email address", example = "john.doe@example.com")
     private String email;
 
-    @Schema(description = "Login username for authentication", example = "johndoe")
+    @Schema(description = "User's login username", example = "johndoe")
     private String login;
 
-    @Schema(description = "Phone number of the user", example = "+55 31 91234-5678")
+    @Schema(description = "User's phone number", example = "+1-555-123-4567")
     private String phone;
 
-    @Schema(description = "Address details of the user")
+    @Schema(description = "User's address details")
     private AddressDTO address;
 
-    @Schema(description = "List of roles assigned to the user")
-    private Set<RoleDTO> roles = new HashSet<>();
-
-    public UserDTO() {
+    public UserInvoiceDTO() {
     }
 
-    public UserDTO(Long id, String firstName, String lastName, String email, String login, String phone, AddressDTO address) {
+    public UserInvoiceDTO(Long id, String firstName, String lastName, String email, String login, String phone, AddressDTO address) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -48,7 +42,7 @@ public class UserDTO extends RepresentationModel<UserDTO> {
         this.address = address;
     }
 
-    public UserDTO(User entity) {
+    public UserInvoiceDTO(User entity) {
         this.id = entity.getId();
         this.firstName = entity.getFirstName();
         this.lastName = entity.getLastName();
@@ -56,8 +50,6 @@ public class UserDTO extends RepresentationModel<UserDTO> {
         this.login = entity.getLogin();
         this.phone = entity.getPhone();
         this.address = entity.getAddress() != null ? new AddressDTO(entity.getAddress()) : null;
-
-        entity.getRoles().forEach(role -> roles.add(new RoleDTO(role)));
     }
 
     public Long getId() {
@@ -116,17 +108,9 @@ public class UserDTO extends RepresentationModel<UserDTO> {
         this.address = address;
     }
 
-    public Set<RoleDTO> getRoles() {
-        return roles;
-    }
-
-    public void setRoles(Set<RoleDTO> roles) {
-        this.roles = roles;
-    }
-
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof UserDTO userDTO)) return false;
+        if (!(o instanceof UserInvoiceDTO userDTO)) return false;
         return Objects.equals(id, userDTO.id);
     }
 
@@ -135,4 +119,16 @@ public class UserDTO extends RepresentationModel<UserDTO> {
         return Objects.hashCode(id);
     }
 
+    @Override
+    public String toString() {
+        return "UserDTO{" +
+                "id=" + id +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", email='" + email + '\'' +
+                ", login='" + login + '\'' +
+                ", phone='" + phone + '\'' +
+                ", address=" + address +
+                '}';
+    }
 }

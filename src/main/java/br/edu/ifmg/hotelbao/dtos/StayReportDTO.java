@@ -1,10 +1,11 @@
 package br.edu.ifmg.hotelbao.dtos;
 
 import br.edu.ifmg.hotelbao.entities.Stay;
+import org.springframework.hateoas.RepresentationModel;
 
 import java.math.BigDecimal;
 
-public class StayReportDTO {
+public class StayReportDTO extends RepresentationModel<StayResponseDTO> {
 
     private Long id;
     private String descriptionRoom;
@@ -47,15 +48,6 @@ public class StayReportDTO {
 
     public void setPrice(BigDecimal price) {
         this.price = price;
-    }
-
-    @Override
-    public String toString() {
-        return "StayReportDTO{" +
-                "id=" + id +
-                ", descriptionRoom='" + descriptionRoom + '\'' +
-                ", price=" + price +
-                '}';
     }
 
 }

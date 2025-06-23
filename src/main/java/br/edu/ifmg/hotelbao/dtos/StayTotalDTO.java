@@ -1,8 +1,10 @@
 package br.edu.ifmg.hotelbao.dtos;
 
+import org.springframework.hateoas.RepresentationModel;
+
 import java.math.BigDecimal;
 
-public class StayTotalDTO {
+public class StayTotalDTO extends RepresentationModel<StayTotalDTO> {
 
     private BigDecimal total;
 
@@ -19,13 +21,6 @@ public class StayTotalDTO {
 
     public void setTotal(BigDecimal total) {
         this.total = total;
-    }
-
-    @Override
-    public String toString() {
-        return "StayTotalDTO{" +
-                "total=" + total +
-                '}';
     }
 
 }

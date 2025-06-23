@@ -6,12 +6,13 @@ import jakarta.persistence.Column;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import org.springframework.hateoas.RepresentationModel;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Objects;
 
-public class StayResponseDTO {
+public class StayResponseDTO extends RepresentationModel<StayResponseDTO> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -130,17 +131,4 @@ public class StayResponseDTO {
         return Objects.hashCode(id);
     }
 
-    @Override
-    public String toString() {
-        return "StayResponseDTO{" +
-                "id=" + id +
-                ", userId=" + userId +
-                ", userName='" + userName + '\'' +
-                ", roomId=" + roomId +
-                ", roomDescription='" + roomDescription + '\'' +
-                ", checkIn=" + checkIn +
-                ", checkOut=" + checkOut +
-                ", price=" + price +
-                '}';
-    }
 }
