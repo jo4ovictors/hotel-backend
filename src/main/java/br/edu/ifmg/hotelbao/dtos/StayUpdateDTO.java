@@ -1,6 +1,7 @@
 package br.edu.ifmg.hotelbao.dtos;
 
 import br.edu.ifmg.hotelbao.entities.Stay;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -8,14 +9,19 @@ import jakarta.persistence.Id;
 import java.time.LocalDate;
 import java.util.Objects;
 
+@Schema(description = "Data Transfer Object used to update a stay record")
 public class StayUpdateDTO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Schema(description = "ID of the user associated with the stay", example = "1")
     private Long userId;
+
+    @Schema(description = "ID of the room assigned to the stay", example = "2")
     private Long roomId;
 
+    @Schema(description = "Check-in date of the stay", example = "2025-07-01")
     private LocalDate checkIn;
+
+    @Schema(description = "Check-out date of the stay", example = "2025-07-05")
     private LocalDate checkOut;
 
     public StayUpdateDTO() {

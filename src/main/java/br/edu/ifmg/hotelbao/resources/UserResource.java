@@ -1,8 +1,10 @@
 package br.edu.ifmg.hotelbao.resources;
 
 import br.edu.ifmg.hotelbao.dtos.InvoiceDTO;
+import br.edu.ifmg.hotelbao.dtos.RoomDTO;
 import br.edu.ifmg.hotelbao.dtos.UserDTO;
 import br.edu.ifmg.hotelbao.dtos.UserInsertDTO;
+import br.edu.ifmg.hotelbao.entities.User;
 import br.edu.ifmg.hotelbao.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -11,16 +13,22 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
-
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping(value = "/user")
@@ -40,15 +48,33 @@ public class UserResource {
     })
     @GetMapping(produces = "application/json")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
-    public ResponseEntity<List<UserDTO>> findAll() {
-        List<UserDTO> users = userService.findAll();
+    public ResponseEntity<Page<UserDTO>> findAll(Pageable pageable) {
+        Page<UserDTO> page = userService.findAll(pageable);
 
-        users.forEach(dto -> {
+        page.forEach(dto -> {
             dto.add(linkTo(methodOn(UserResource.class).findById(dto.getId())).withSelfRel());
         });
 
-        return ResponseEntity.ok(users);
+        return ResponseEntity.ok().body(page);
     }
+
+
+
+    @GetMapping("user_info")
+    public ResponseEntity<?> getUserInfo(@AuthenticationPrincipal Jwt jwt) {
+        String login = jwt.getClaim("username");
+        User user = userService.findByLogin(login);
+
+        return ResponseEntity.ok(Map.of(
+                "id", user.getId(),
+                "username", user.getUsername(),
+                "authorities", jwt.getClaim("authorities"),
+                "token_id", jwt.getId(),
+                "issued_at", jwt.getIssuedAt(),
+                "expires_at", jwt.getExpiresAt()
+        ));
+    }
+
 
     @Operation(summary = "Get user by ID", description = "Returns a user based on the provided ID. Admin access required.")
     @ApiResponses({
@@ -63,7 +89,7 @@ public class UserResource {
         UserDTO dto = userService.findById(id);
 
         dto.add(linkTo(methodOn(UserResource.class).findById(id)).withSelfRel());
-        dto.add(linkTo(methodOn(UserResource.class).findAll()).withRel("all-users"));
+        dto.add(linkTo(methodOn(UserResource.class).findAll(null)).withRel("all-users"));
         dto.add(linkTo(methodOn(UserResource.class).update(id, dto)).withRel("update"));
         dto.add(linkTo(methodOn(UserResource.class).delete(id)).withRel("delete"));
         dto.add(linkTo(methodOn(UserResource.class).findInvoice(id)).withRel("invoice"));
@@ -83,9 +109,9 @@ public class UserResource {
         UserDTO user = userService.insert(dto);
 
         user.add(linkTo(methodOn(UserResource.class).findById(user.getId())).withSelfRel());
-        user.add(linkTo(methodOn(UserResource.class).findAll()).withRel("all-users"));
+        user.add(linkTo(methodOn(UserResource.class).findAll(null)).withRel("all-users"));
 
-        URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(dto.getId()).toUri();
+        URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(user.getId()).toUri();
         return ResponseEntity.created(uri).body(user);
     }
 
@@ -103,7 +129,7 @@ public class UserResource {
         dto = userService.update(id, dto);
 
         dto.add(linkTo(methodOn(UserResource.class).findById(dto.getId())).withSelfRel());
-        dto.add(linkTo(methodOn(UserResource.class).findAll()).withRel("all-users"));
+        dto.add(linkTo(methodOn(UserResource.class).findAll(null)).withRel("all-users"));
 
         return ResponseEntity.ok().body(dto);
     }
@@ -130,7 +156,7 @@ public class UserResource {
     public ResponseEntity<UserDTO> signup(
             @Parameter(description = "User data for signup") @Valid @RequestBody UserInsertDTO dto) {
         UserDTO user = userService.signup(dto);
-        URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(dto.getId()).toUri();
+        URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(user.getId()).toUri();
         return ResponseEntity.created(uri).body(user);
     }
 

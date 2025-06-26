@@ -14,9 +14,10 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,11 +44,9 @@ public class UserService implements UserDetailsService {
     private PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
-    public List<UserDTO> findAll() {
-        return userRepository.findAll()
-                .stream()
-                .map(UserDTO::new)
-                .toList();
+    public Page<UserDTO> findAll(Pageable pageable) {
+        return userRepository.findAll(pageable)
+                .map(UserDTO::new);
     }
 
     @Transactional(readOnly = true)
@@ -68,7 +67,7 @@ public class UserService implements UserDetailsService {
         return address;
     }
 
-    private void copyDTOToEntity(UserDTO dto, User entity) {
+    private void  copyDTOToEntity(UserDTO dto, User entity) {
 
         if (dto.getFirstName() != null) entity.setFirstName(dto.getFirstName());
         if (dto.getLastName() != null) entity.setLastName(dto.getLastName());
@@ -84,7 +83,9 @@ public class UserService implements UserDetailsService {
         if (dto.getRoles() != null && !dto.getRoles().isEmpty()) {
             entity.getRoles().clear();
             for (RoleDTO role : dto.getRoles()) {
-                Role r = roleRepository.getReferenceById(role.getId());
+                Role r = roleRepository.findById(role.getId())
+                        .orElseThrow(() -> new ResourceNotFound("Role not found: " + role.getId()));
+
                 entity.getRoles().add(r);
             }
         }
@@ -152,9 +153,9 @@ public class UserService implements UserDetailsService {
         User entity = new User();
         copyDTOToEntity(dto, entity);
 
-        Role role = roleRepository.findByAuthority("ROLE_EMPLOYEE");
-        entity.getRoles().clear();
-        entity.getRoles().add(role);
+//        Role role = roleRepository.findByAuthority("ROLE_CLIENT");
+//        entity.getRoles().clear();
+//        entity.getRoles().add(role);
 
         entity.setPassword(passwordEncoder.encode(dto.getPassword()));
         User novo = userRepository.save(entity);
@@ -179,5 +180,9 @@ public class UserService implements UserDetailsService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return new InvoiceDTO(uerInvoiceDTO, stays, total);
+    }
+
+    public User findByLogin(String username) {
+        return userRepository.findByLogin(username).orElseThrow(() -> new ResourceNotFound("User not found"));
     }
 }

@@ -1,16 +1,29 @@
 package br.edu.ifmg.hotelbao.dtos;
 
 import br.edu.ifmg.hotelbao.entities.Address;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.Objects;
 
+@Schema(name = "AddressDTO", description = "Data Transfer Object representing an address, including street, city, state, postal code, and country.")
 public class AddressDTO {
 
+    @Schema(description = "Unique identifier of the address", example = "1", accessMode = Schema.AccessMode.READ_ONLY)
     private Long id;
+
+    @Schema(description = "Street name and number", example = "123 Ocean Drive")
     private String street;
+
+    @Schema(description = "City name", example = "Miami")
     private String city;
+
+    @Schema(description = "State or province", example = "Florida")
     private String state;
+
+    @Schema(description = "Postal code (ZIP or equivalent)", example = "33139")
     private String postalCode;
+
+    @Schema(description = "Country name", example = "United States")
     private String country;
 
     public AddressDTO() {
