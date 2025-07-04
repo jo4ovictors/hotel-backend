@@ -11,7 +11,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +21,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
 import java.net.URI;
-import java.util.List;
 
 @RestController
 @RequestMapping(value = "/user")
@@ -30,9 +30,6 @@ public class UserResource {
     @Autowired
     private UserService userService;
 
-    @Autowired
-    private PagedResourcesAssembler<UserDTO> assembler;
-
     @Operation(summary = "List all users", description = "Returns a list of all registered users. Admin access required.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "List returned successfully"),
@@ -40,14 +37,14 @@ public class UserResource {
     })
     @GetMapping(produces = "application/json")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
-    public ResponseEntity<List<UserDTO>> findAll() {
-        List<UserDTO> users = userService.findAll();
+    public ResponseEntity<Page<UserDTO>> findAll(Pageable pageable) {
+        Page<UserDTO> page = userService.findAll(pageable);
 
-        users.forEach(dto -> {
+        page.forEach(dto -> {
             dto.add(linkTo(methodOn(UserResource.class).findById(dto.getId())).withSelfRel());
         });
 
-        return ResponseEntity.ok(users);
+        return ResponseEntity.ok(page);
     }
 
     @Operation(summary = "Get user by ID", description = "Returns a user based on the provided ID. Admin access required.")
@@ -57,20 +54,20 @@ public class UserResource {
             @ApiResponse(responseCode = "403", description = "Forbidden access")
     })
     @GetMapping(value = "/{id}", produces = "application/json")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_EMPLOYEE', 'ROLE_CLIENT')")
     public ResponseEntity<UserDTO> findById(
             @Parameter(description = "ID of the user to retrieve") @PathVariable Long id) {
         UserDTO dto = userService.findById(id);
 
         dto.add(linkTo(methodOn(UserResource.class).findById(id)).withSelfRel());
-        dto.add(linkTo(methodOn(UserResource.class).findAll()).withRel("all-users"));
+        dto.add(linkTo(methodOn(UserResource.class).findAll(null)).withRel("all-users"));
         dto.add(linkTo(methodOn(UserResource.class).update(id, dto)).withRel("update"));
         dto.add(linkTo(methodOn(UserResource.class).delete(id)).withRel("delete"));
         dto.add(linkTo(methodOn(UserResource.class).findInvoice(id)).withRel("invoice"));
 
         return ResponseEntity.ok().body(dto);
     }
-
+    
     @Operation(summary = "Create a new user", description = "Registers a new user. Requires ADMIN or EMPLOYEE role.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "User created successfully"),
@@ -83,7 +80,7 @@ public class UserResource {
         UserDTO user = userService.insert(dto);
 
         user.add(linkTo(methodOn(UserResource.class).findById(user.getId())).withSelfRel());
-        user.add(linkTo(methodOn(UserResource.class).findAll()).withRel("all-users"));
+        user.add(linkTo(methodOn(UserResource.class).findAll(null)).withRel("all-users"));
 
         URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(dto.getId()).toUri();
         return ResponseEntity.created(uri).body(user);
@@ -103,7 +100,7 @@ public class UserResource {
         dto = userService.update(id, dto);
 
         dto.add(linkTo(methodOn(UserResource.class).findById(dto.getId())).withSelfRel());
-        dto.add(linkTo(methodOn(UserResource.class).findAll()).withRel("all-users"));
+        dto.add(linkTo(methodOn(UserResource.class).findAll(null)).withRel("all-users"));
 
         return ResponseEntity.ok().body(dto);
     }
@@ -140,7 +137,7 @@ public class UserResource {
             @ApiResponse(responseCode = "404", description = "User not found")
     })
     @GetMapping(value = "/invoice/{id}", produces = "application/json")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_EMPLOYEE', 'ROLE_CLIENT')")
     public ResponseEntity<InvoiceDTO> findInvoice(
             @Parameter(description = "ID of the user to generate invoice for") @PathVariable Long id) {
         return ResponseEntity.ok().body(userService.newInvoice(id));

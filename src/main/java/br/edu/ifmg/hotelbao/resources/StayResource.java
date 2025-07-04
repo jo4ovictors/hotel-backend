@@ -9,6 +9,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,10 +30,10 @@ public class StayResource {
 
     @Operation(summary = "List all stays", description = "Returns all stays in the system.")
     @ApiResponse(responseCode = "200", description = "Stays listed successfully")
-    @GetMapping
+    @GetMapping(produces = "application/json")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_EMPLOYEE')")
-    public ResponseEntity<List<StayResponseDTO>> findAll() {
-        List<StayResponseDTO> stays = stayService.findAll();
+    public ResponseEntity<Page<StayResponseDTO>> findAll(Pageable pageable) {
+        Page<StayResponseDTO> stays = stayService.findAll(pageable);
 
         stays.forEach(dto -> {
             dto.add(linkTo(methodOn(StayResource.class).findById(dto.getId())).withSelfRel());
@@ -44,6 +46,7 @@ public class StayResource {
     @ApiResponse(responseCode = "200", description = "Stay found successfully")
     @ApiResponse(responseCode = "404", description = "Stay not found")
     @GetMapping(value = "/{id}", produces = "application/json")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_EMPLOYEE', 'ROLE_CLIENT')")
     public ResponseEntity<StayResponseDTO> findById(
             @Parameter(description = "ID of the stay") @PathVariable Long id) {
         StayResponseDTO dto = stayService.findById(id);
@@ -58,6 +61,7 @@ public class StayResource {
     @Operation(summary = "List stays by user", description = "Returns all stays associated with a specific user.")
     @ApiResponse(responseCode = "200", description = "Stays found for the user")
     @GetMapping("/user/{userId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_EMPLOYEE', 'ROLE_CLIENT')")
     public ResponseEntity<List<StayResponseDTO>> findByUser(
             @Parameter(description = "User ID") @PathVariable Long userId) {
         List<StayResponseDTO> stays = stayService.findByUser(userId);
@@ -75,10 +79,10 @@ public class StayResource {
             @ApiResponse(responseCode = "400", description = "Invalid input data")
     })
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_EMPLOYEE')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_EMPLOYEE', 'ROLE_CLIENT')")
     public ResponseEntity<StayResponseDTO> create(
             @Parameter(description = "Stay creation data") @RequestBody StayCreateDTO dto) {
-        StayResponseDTO created = stayService.createStay(dto);
+        StayResponseDTO created = stayService.create(dto);
 
         created.add(linkTo(methodOn(StayResource.class).findById(created.getId())).withSelfRel());
         created.add(linkTo(methodOn(StayResource.class).delete(created.getId())).withRel("delete"));
@@ -93,7 +97,7 @@ public class StayResource {
             @ApiResponse(responseCode = "404", description = "Stay not found")
     })
     @DeleteMapping(value = "/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_EMPLOYEE', 'ROLE_CLIENT')")
     public ResponseEntity<Void> delete(
             @Parameter(description = "ID of the stay to delete") @PathVariable Long id) {
         stayService.delete(id);
@@ -107,7 +111,7 @@ public class StayResource {
             @ApiResponse(responseCode = "404", description = "Stay not found")
     })
     @PutMapping(value = "/{id}", produces = "application/json")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_EMPLOYEE', 'ROLE_CLIENT')")
     public ResponseEntity<StayResponseDTO> update(
             @Parameter(description = "ID of the stay to update") @PathVariable Long id,
             @Parameter(description = "Stay update data") @Valid @RequestBody StayUpdateDTO dto) {
@@ -118,6 +122,7 @@ public class StayResource {
 
     @Operation(summary = "Report - Cheapest stay", description = "Returns the cheapest stay for a given user.")
     @GetMapping("/report/min/{userId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_EMPLOYEE', 'ROLE_CLIENT')")
     public ResponseEntity<StayReportDTO> cheapestStay(
             @Parameter(description = "User ID") @PathVariable Long userId) {
         StayReportDTO report = stayService.findCheapestStay(userId);
@@ -132,6 +137,7 @@ public class StayResource {
 
     @Operation(summary = "Report - Most expensive stay", description = "Returns the most expensive stay for a given user.")
     @GetMapping("/report/max/{userId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_EMPLOYEE', 'ROLE_CLIENT')")
     public ResponseEntity<StayReportDTO> mostExpensiveStay(
             @Parameter(description = "User ID") @PathVariable Long userId) {
         StayReportDTO report = stayService.findCheapestStay(userId);
@@ -146,6 +152,7 @@ public class StayResource {
 
     @Operation(summary = "Report - Total spent by user", description = "Returns the total amount spent by a user.")
     @GetMapping("/report/total/{userId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_EMPLOYEE', 'ROLE_CLIENT')")
     public ResponseEntity<StayTotalDTO> totalSpentByUser(
             @Parameter(description = "User ID") @PathVariable Long userId) {
         StayTotalDTO total = stayService.calculateTotalSpentByUser(userId);

@@ -23,7 +23,7 @@ public class UserInvoiceDTO {
     @Schema(description = "User's login username", example = "johndoe")
     private String login;
 
-    @Schema(description = "User's phone number", example = "+1-555-123-4567")
+    @Schema(description = "User's phone number", example = "+55 31 91234-5678")
     private String phone;
 
     @Schema(description = "User's address details")

@@ -1,6 +1,7 @@
 package br.edu.ifmg.hotelbao.resources.exceptions;
 
 
+import br.edu.ifmg.hotelbao.services.exceptions.BusinessValidationException;
 import br.edu.ifmg.hotelbao.services.exceptions.DatabaseException;
 import br.edu.ifmg.hotelbao.services.exceptions.EmailException;
 import br.edu.ifmg.hotelbao.services.exceptions.ResourceNotFound;
@@ -99,10 +100,28 @@ public class ResourceExceptionListener {
         error.setTimestamp(Instant.now());
         error.setStatus(status.value());
         error.setError("Forbidden");
-        error.setMessage("You do not have permission to access this resource.");
+        error.setMessage(ex.getMessage());
         error.setPath(request.getRequestURI());
         return ResponseEntity.status(status).body(error);
     }
+
+    @ExceptionHandler(BusinessValidationException.class)
+    public ResponseEntity<StandardError> handleBusinessValidationException(
+            BusinessValidationException ex,
+            HttpServletRequest request) {
+
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        StandardError error = new StandardError();
+        error.setTimestamp(Instant.now());
+        error.setStatus(status.value());
+        error.setError("Business Validation Error");
+        error.setMessage(ex.getMessage());
+        error.setPath(request.getRequestURI());
+
+        return ResponseEntity.status(status).body(error);
+    }
+
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<StandardError> handleGenericException(Exception ex, HttpServletRequest request) {
@@ -117,7 +136,5 @@ public class ResourceExceptionListener {
 
         return ResponseEntity.status(status).body(error);
     }
-
-
 
 }

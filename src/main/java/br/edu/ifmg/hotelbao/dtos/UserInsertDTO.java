@@ -4,6 +4,7 @@ import br.edu.ifmg.hotelbao.entities.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 
+@Schema(name = "UserInsertDTO", description = "DTO used to insert a new user including password.")
 public class UserInsertDTO extends UserDTO {
 
     @NotBlank(message = "[!] -> Password is required")

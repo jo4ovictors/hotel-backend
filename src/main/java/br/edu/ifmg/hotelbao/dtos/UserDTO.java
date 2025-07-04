@@ -8,7 +8,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-@Schema(description = "Data Transfer Object representing a user in the system")
+@Schema(name = "UserDTO", description = "Data Transfer Object representing a user in the system")
 public class UserDTO extends RepresentationModel<UserDTO> {
 
     @Schema(description = "Unique identifier of the user", example = "1")

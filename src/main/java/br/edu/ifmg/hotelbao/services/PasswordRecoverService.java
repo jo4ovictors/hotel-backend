@@ -44,24 +44,20 @@ public class  PasswordRecoverService{
     private PasswordEncoder passwordEncoder;
 
     public void createRecoverToken(RequestTokenDTO dto) {
-        // pelo email gerar um token
         User user = userRepository.findByEmail(dto.getEmail());
 
         if (user == null) {
-            throw new ResourceNotFound("Email not found");
+            throw new ResourceNotFound("[!] -> Email not found!");
         }
 
-        // gerar um token
         String token = UUID.randomUUID().toString();
 
-        // Inserir no BD
         PasswordRecover passwordRecover = new PasswordRecover();
         passwordRecover.setToken(token);
         passwordRecover.setEmail(user.getEmail());
         passwordRecover.setExpiration(Instant.now().plusSeconds(tokenMinutes * 60L));
         passwordRecoverRepository.save(passwordRecover);
 
-        // enviar o email com o token incluído no corpo do email
         String body = "Acesse o link para definir uma nova senha: (válido por "
                 + tokenMinutes + " minutos)"
                 + "\n\n" + uri + token;
@@ -73,7 +69,7 @@ public class  PasswordRecoverService{
         List<PasswordRecover> list = passwordRecoverRepository.searchValidToken(dto.getToken(), Instant.now());
 
         if (list.isEmpty()) {
-            throw new ResourceNotFound("Token not found");
+            throw new ResourceNotFound("[!] -> Token not found!");
         }
 
         User user = userRepository.findByEmail(list.getFirst().getEmail());

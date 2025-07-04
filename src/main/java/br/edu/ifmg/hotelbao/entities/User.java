@@ -16,7 +16,11 @@ public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false)
     private String firstName;
+
+    @Column(nullable = false)
     private String lastName;
 
     @Column(unique = true)
@@ -24,6 +28,8 @@ public class User implements UserDetails {
 
     @Column(unique = true)
     private String login;
+
+    @Column(nullable = false)
     private String password;
 
     @Column(unique = true)

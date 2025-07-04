@@ -2,22 +2,29 @@ package br.edu.ifmg.hotelbao.dtos;
 
 import br.edu.ifmg.hotelbao.entities.Stay;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Objects;
 
+@Schema(name = "StayCreateDTO", description = "Data Transfer Object used for creating a new stay record")
 public class StayCreateDTO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Schema(description = "Automatically generated ID of the stay", example = "1001", accessMode = Schema.AccessMode.READ_ONLY)
     private Long id;
 
+    @Schema(description = "ID of the user making the reservation", example = "501")
     private Long userId;
+
+    @Schema(description = "ID of the room to be reserved", example = "302")
     private Long roomId;
 
+    @Schema(description = "Check-in date for the stay", example = "2025-07-01")
     private LocalDate checkIn;
+
+    @Schema(description = "Check-out date for the stay", example = "2025-07-05")
     private LocalDate checkOut;
 
     public StayCreateDTO() {

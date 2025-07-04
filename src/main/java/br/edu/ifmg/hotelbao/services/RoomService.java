@@ -4,12 +4,9 @@ import br.edu.ifmg.hotelbao.dtos.RoomDTO;
 import br.edu.ifmg.hotelbao.entities.Room;
 import br.edu.ifmg.hotelbao.repository.RoomRepository;
 import br.edu.ifmg.hotelbao.services.exceptions.ResourceNotFound;
-import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +28,6 @@ public class RoomService {
     }
 
     @Transactional
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_EMPLOYEE')")
     public RoomDTO insert(RoomDTO dto) {
         Room entity = new Room();
         copyDTOToEntity(dto, entity);
@@ -42,7 +38,7 @@ public class RoomService {
     @Transactional
     public RoomDTO update(Long id, RoomDTO dto) {
         Room entity = roomRepository.findActiveById(id)
-                .orElseThrow(() -> new ResourceNotFound("[!] -> Room not found or inactive. ID: " + id));
+                .orElseThrow(() -> new ResourceNotFound("[!] -> Room not found or inactive!"));
 
         copyDTOToEntity(dto, entity);
         entity = roomRepository.save(entity);
@@ -50,18 +46,17 @@ public class RoomService {
     }
 
     @Transactional
-    public void deleteRoom(Long id) {
+    public void delete(Long id) {
         Room room = roomRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFound("[!] -> Room not found!"));
         room.setActive(false);
         roomRepository.save(room);
     }
 
-
     private void copyDTOToEntity(RoomDTO dto, Room entity) {
-        entity.setDescription(dto.getDescription());
-        entity.setPrice(dto.getPrice());
-        entity.setImageUrl(dto.getImageUrl());
+        if (dto.getDescription() != null) entity.setDescription(dto.getDescription());
+        if (dto.getPrice() != null) entity.setPrice(dto.getPrice());
+        if (dto.getImageUrl() != null) entity.setImageUrl(dto.getImageUrl());
     }
 
 }

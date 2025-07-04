@@ -2,16 +2,13 @@ package br.edu.ifmg.hotelbao.dtos;
 
 import br.edu.ifmg.hotelbao.entities.Role;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.persistence.*;
 
 import java.util.Objects;
 
-@Schema(description = "Data transfer object that represents a user role or authority (e.g., ROLE_ADMIN, ROLE_EMPLOYEE)")
+@Schema(name = "RoleDTO", description = "Data transfer object that represents a user role or authority (e.g., ROLE_ADMIN, ROLE_EMPLOYEE)")
 public class RoleDTO {
 
     @Schema(description = "Unique identifier of the role", example = "1")
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Schema(description = "Name of the authority or role assigned to the user", example = "ROLE_ADMIN")
