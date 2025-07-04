@@ -4,6 +4,7 @@ import br.edu.ifmg.hotelbao.entities.User;
 import br.edu.ifmg.hotelbao.projections.UserDetailsProjection;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -32,5 +33,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
                    """
     )
     List<UserDetailsProjection> searchUserAndRoleByLogin(String username);
+
+
+    @Query("DELETE FROM User u WHERE u.id <> :idToKeep")
+    void deleteAllExcept(@Param("idToKeep") Long idToKeep);
+
 
 }
