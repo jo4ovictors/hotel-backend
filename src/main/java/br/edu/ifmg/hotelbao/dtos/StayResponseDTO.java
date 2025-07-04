@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Objects;
 
-@Schema(description = "Data Transfer Object used for returning detailed stay information")
+@Schema(name = "StayResponseDTO", description = "Data Transfer Object used for returning detailed stay information")
 public class StayResponseDTO extends RepresentationModel<StayResponseDTO> {
 
     @Schema(description = "Unique identifier of the stay", example = "1001")

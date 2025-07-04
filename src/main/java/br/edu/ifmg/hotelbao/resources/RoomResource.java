@@ -122,7 +122,7 @@ public class RoomResource {
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     public ResponseEntity<Void> delete(
             @Parameter(description = "ID of the room to delete") @PathVariable Long id) {
-        roomService.deleteRoom(id);
+        roomService.delete(id);
         return ResponseEntity.noContent().build();
     }
 

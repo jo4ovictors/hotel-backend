@@ -6,7 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-@Schema(description = "Data Transfer Object representing a single stay item with pricing and dates")
+@Schema(name = "StayItemDTO", description = "Data Transfer Object representing a single stay item with pricing and dates")
 public class StayItemDTO {
 
     @Schema(description = "Description of the room or stay package", example = "Standard Room with City View")

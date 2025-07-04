@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.Objects;
 
-@Schema(description = "Data transfer object that represents a user role or authority (e.g., ROLE_ADMIN, ROLE_EMPLOYEE)")
+@Schema(name = "RoleDTO", description = "Data transfer object that represents a user role or authority (e.g., ROLE_ADMIN, ROLE_EMPLOYEE)")
 public class RoleDTO {
 
     @Schema(description = "Unique identifier of the role", example = "1")

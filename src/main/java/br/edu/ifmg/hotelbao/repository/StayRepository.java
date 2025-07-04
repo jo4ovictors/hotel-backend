@@ -42,16 +42,16 @@ public interface StayRepository extends JpaRepository<Stay, Long> {
     BigDecimal findTotalAmountSpentByUser(Long userId);
 
     @Query("""
-    SELECT new br.edu.ifmg.hotelbao.dtos.StayItemDTO(
-        r.description,
-        s.price,
-        s.checkIn,
-        s.checkOut
-    )
-    FROM Stay s
-    JOIN s.room r
-    WHERE s.user.id = :userId
-    """)
+        SELECT new br.edu.ifmg.hotelbao.dtos.StayItemDTO(
+            r.description,
+            s.price,
+            s.checkIn,
+            s.checkOut
+        )
+        FROM Stay s
+        JOIN s.room r
+        WHERE s.user.id = :userId
+        """)
     List<StayItemDTO> findStayItemsByUserId(Long userId);
 
 }

@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Objects;
 
-@Schema(description = "Data Transfer Object used for creating a new stay record")
+@Schema(name = "StayCreateDTO", description = "Data Transfer Object used for creating a new stay record")
 public class StayCreateDTO {
 
     @Schema(description = "Automatically generated ID of the stay", example = "1001", accessMode = Schema.AccessMode.READ_ONLY)

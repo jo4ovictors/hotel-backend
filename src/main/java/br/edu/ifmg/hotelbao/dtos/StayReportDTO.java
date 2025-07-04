@@ -6,7 +6,7 @@ import org.springframework.hateoas.RepresentationModel;
 
 import java.math.BigDecimal;
 
-@Schema(description = "Data Transfer Object used for reporting stay information")
+@Schema(name = "StayReportDTO", description = "Data Transfer Object used for reporting stay information")
 public class StayReportDTO extends RepresentationModel<StayResponseDTO> {
 
     @Schema(description = "Unique identifier of the stay", example = "2001")

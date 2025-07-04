@@ -9,6 +9,7 @@ import br.edu.ifmg.hotelbao.repository.AddressRepository;
 import br.edu.ifmg.hotelbao.repository.RoleRepository;
 import br.edu.ifmg.hotelbao.repository.StayRepository;
 import br.edu.ifmg.hotelbao.repository.UserRepository;
+import br.edu.ifmg.hotelbao.services.exceptions.DatabaseException;
 import br.edu.ifmg.hotelbao.services.exceptions.ResourceNotFound;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
@@ -16,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -43,54 +45,25 @@ public class UserService implements UserDetailsService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private AuthService authService;
+
     @Transactional(readOnly = true)
     public Page<UserDTO> findAll(Pageable pageable) {
-        return userRepository.findAll(pageable)
-                .map(UserDTO::new);
+        return userRepository.findAll(pageable).map(UserDTO::new);
     }
 
     @Transactional(readOnly = true)
     public UserDTO findById(Long id) {
+        User currentUser = authService.getAuthenticatedUser();
+
+        if (authService.doesNotHaveAuthority("ROLE_ADMIN") && !currentUser.getId().equals(id)) {
+            throw new AccessDeniedException("[!] -> You do not have permission to access this resource!");
+        }
+
         User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFound("[!] -> User not found!"));
         return new UserDTO(user);
     }
-
-    private Address convertAddressDTOToEntity(AddressDTO dto, Address existingAddress) {
-        Address address = existingAddress != null ? existingAddress : new Address();
-
-        if (dto.getStreet() != null) address.setStreet(dto.getStreet());
-        if (dto.getCity() != null) address.setCity(dto.getCity());
-        if (dto.getState() != null) address.setState(dto.getState());
-        if (dto.getPostalCode() != null) address.setPostalCode(dto.getPostalCode());
-        if (dto.getCountry() != null) address.setCountry(dto.getCountry());
-
-        return address;
-    }
-
-    private void  copyDTOToEntity(UserDTO dto, User entity) {
-
-        if (dto.getFirstName() != null) entity.setFirstName(dto.getFirstName());
-        if (dto.getLastName() != null) entity.setLastName(dto.getLastName());
-        if (dto.getEmail() != null) entity.setEmail(dto.getEmail());
-        if (dto.getLogin() != null) entity.setLogin(dto.getLogin());
-        if (dto.getPhone() != null) entity.setPhone(dto.getPhone());
-
-        if (dto.getAddress() != null) {
-            Address updatedAddress = convertAddressDTOToEntity(dto.getAddress(), entity.getAddress());
-            entity.setAddress(updatedAddress);
-        }
-
-        if (dto.getRoles() != null && !dto.getRoles().isEmpty()) {
-            entity.getRoles().clear();
-            for (RoleDTO role : dto.getRoles()) {
-                Role r = roleRepository.findById(role.getId())
-                        .orElseThrow(() -> new ResourceNotFound("Role not found: " + role.getId()));
-
-                entity.getRoles().add(r);
-            }
-        }
-    }
-
 
     @Transactional
     public UserDTO insert(UserInsertDTO dto) {
@@ -124,7 +97,82 @@ public class UserService implements UserDetailsService {
             userRepository.deleteById(id);
         }
         catch (DataIntegrityViolationException e) {
-            throw new ResourceNotFound("[!] -> Integrity Violation!");
+            throw new DatabaseException("[!] -> Integrity Violation!");
+        }
+    }
+
+    public UserDTO signup(@Valid UserInsertDTO dto) {
+        User entity = new User();
+        copyDTOToEntity(dto, entity);
+
+        Role role = roleRepository.findByAuthority("ROLE_CLIENT");
+        entity.getRoles().clear();
+        entity.getRoles().add(role);
+
+        entity.setPassword(passwordEncoder.encode(dto.getPassword()));
+        User novo = userRepository.save(entity);
+        return new UserDTO(novo);
+    }
+
+    @Transactional
+    public InvoiceDTO newInvoice(Long userId) {
+
+        User currentUser = authService.getAuthenticatedUser();
+
+        if (authService.doesNotHaveAuthority("ROLE_ADMIN") && !currentUser.getId().equals(userId)) {
+            throw new AccessDeniedException("[!] -> You do not have permission to access this resource!");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFound("[!] -> User not found!"));
+
+        UserInvoiceDTO uerInvoiceDTO = new UserInvoiceDTO(user);
+
+        List<StayItemDTO> stays = stayRepository.findStayItemsByUserId(userId);
+
+        if (stays.isEmpty()) {
+            throw new ResourceNotFound("[!] -> The user does not have any stays for the invoice!");
+        }
+
+        BigDecimal total = stays.stream()
+                .filter(e -> e.getDescription() != null && e.getPrice() != null)
+                .map(StayItemDTO::getPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return new InvoiceDTO(uerInvoiceDTO, stays, total);
+    }
+
+    private Address convertAddressDTOToEntity(AddressDTO dto, Address existingAddress) {
+        Address address = existingAddress != null ? existingAddress : new Address();
+
+        if (dto.getStreet() != null) address.setStreet(dto.getStreet());
+        if (dto.getCity() != null) address.setCity(dto.getCity());
+        if (dto.getState() != null) address.setState(dto.getState());
+        if (dto.getPostalCode() != null) address.setPostalCode(dto.getPostalCode());
+        if (dto.getCountry() != null) address.setCountry(dto.getCountry());
+
+        return address;
+    }
+
+    private void copyDTOToEntity(UserDTO dto, User entity) {
+
+        if (dto.getFirstName() != null) entity.setFirstName(dto.getFirstName());
+        if (dto.getLastName() != null) entity.setLastName(dto.getLastName());
+        if (dto.getEmail() != null) entity.setEmail(dto.getEmail());
+        if (dto.getLogin() != null) entity.setLogin(dto.getLogin());
+        if (dto.getPhone() != null) entity.setPhone(dto.getPhone());
+
+        if (dto.getAddress() != null) {
+            Address updatedAddress = convertAddressDTOToEntity(dto.getAddress(), entity.getAddress());
+            entity.setAddress(updatedAddress);
+        }
+
+        if (dto.getRoles() != null && !dto.getRoles().isEmpty()) {
+            entity.getRoles().clear();
+            for (RoleDTO role : dto.getRoles()) {
+                Role r = roleRepository.getReferenceById(role.getId());
+                entity.getRoles().add(r);
+            }
         }
     }
 
@@ -149,40 +197,4 @@ public class UserService implements UserDetailsService {
         return buildUserWithRoles(result);
     }
 
-    public UserDTO signup(@Valid UserInsertDTO dto) {
-        User entity = new User();
-        copyDTOToEntity(dto, entity);
-
-//        Role role = roleRepository.findByAuthority("ROLE_CLIENT");
-//        entity.getRoles().clear();
-//        entity.getRoles().add(role);
-
-        entity.setPassword(passwordEncoder.encode(dto.getPassword()));
-        User novo = userRepository.save(entity);
-        return new UserDTO(novo);
-    }
-
-    public InvoiceDTO newInvoice(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFound("[!] -> User not found!"));
-
-        UserInvoiceDTO uerInvoiceDTO = new UserInvoiceDTO(user);
-
-        List<StayItemDTO> stays = stayRepository.findStayItemsByUserId(userId);
-
-        if (stays.isEmpty()) {
-            throw new ResourceNotFound("[!] -> The user does not have any stays for the invoice!");
-        }
-
-        BigDecimal total = stays.stream()
-                .filter(e -> e.getDescription() != null && e.getPrice() != null)
-                .map(StayItemDTO::getPrice)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        return new InvoiceDTO(uerInvoiceDTO, stays, total);
-    }
-
-    public User findByLogin(String username) {
-        return userRepository.findByLogin(username).orElseThrow(() -> new ResourceNotFound("User not found"));
-    }
 }

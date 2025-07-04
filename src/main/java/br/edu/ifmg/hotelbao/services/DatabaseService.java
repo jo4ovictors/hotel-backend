@@ -1,14 +1,15 @@
 package br.edu.ifmg.hotelbao.services;
 
-import br.edu.ifmg.hotelbao.repository.RoleRepository;
-import br.edu.ifmg.hotelbao.repository.RoomRepository;
-import br.edu.ifmg.hotelbao.repository.UserRepository;
+import br.edu.ifmg.hotelbao.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 @Service
 public class DatabaseService {
+
+    @Autowired
+    private AddressRepository addressRepository;
 
     @Autowired
     private RoleRepository roleRepository;
@@ -19,11 +20,19 @@ public class DatabaseService {
     @Autowired
     private RoomRepository roomRepository;
 
+    @Autowired
+    private StayRepository stayRepository;
+
+    @Autowired
+    private PasswordRecoverRepository passwordRecoverRepository;
+
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     public void deleteDatabase() {
-        roleRepository.deleteAll();
+        addressRepository.deleteAll();
+        passwordRecoverRepository.deleteAll();
         userRepository.deleteAll();
         roomRepository.deleteAll();
+        stayRepository.deleteAll();
     }
 
 }

@@ -13,11 +13,13 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long> {
 
     User findByEmail(String email);
+
     Optional<User> findByLogin(String login);
+
     User findByLoginAndPassword(String login, String password);
 
     @Query(nativeQuery = true,
-           value = """
+            value = """
                    SELECT u.login as username,
                           u.password,
                           r.id as roleId,

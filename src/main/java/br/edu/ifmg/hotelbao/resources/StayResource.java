@@ -30,22 +30,23 @@ public class StayResource {
 
     @Operation(summary = "List all stays", description = "Returns all stays in the system.")
     @ApiResponse(responseCode = "200", description = "Stays listed successfully")
-    @GetMapping
+    @GetMapping(produces = "application/json")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_EMPLOYEE')")
     public ResponseEntity<Page<StayResponseDTO>> findAll(Pageable pageable) {
-        Page<StayResponseDTO> page = stayService.findAll(pageable);
+        Page<StayResponseDTO> stays = stayService.findAll(pageable);
 
-        page.forEach(dto -> {
+        stays.forEach(dto -> {
             dto.add(linkTo(methodOn(StayResource.class).findById(dto.getId())).withSelfRel());
         });
 
-        return ResponseEntity.ok().body(page);
+        return ResponseEntity.ok(stays);
     }
 
     @Operation(summary = "Find stay by ID", description = "Returns a single stay by its ID.")
     @ApiResponse(responseCode = "200", description = "Stay found successfully")
     @ApiResponse(responseCode = "404", description = "Stay not found")
     @GetMapping(value = "/{id}", produces = "application/json")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_EMPLOYEE', 'ROLE_CLIENT')")
     public ResponseEntity<StayResponseDTO> findById(
             @Parameter(description = "ID of the stay") @PathVariable Long id) {
         StayResponseDTO dto = stayService.findById(id);
@@ -60,6 +61,7 @@ public class StayResource {
     @Operation(summary = "List stays by user", description = "Returns all stays associated with a specific user.")
     @ApiResponse(responseCode = "200", description = "Stays found for the user")
     @GetMapping("/user/{userId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_EMPLOYEE', 'ROLE_CLIENT')")
     public ResponseEntity<List<StayResponseDTO>> findByUser(
             @Parameter(description = "User ID") @PathVariable Long userId) {
         List<StayResponseDTO> stays = stayService.findByUser(userId);
@@ -80,7 +82,7 @@ public class StayResource {
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_EMPLOYEE', 'ROLE_CLIENT')")
     public ResponseEntity<StayResponseDTO> create(
             @Parameter(description = "Stay creation data") @RequestBody StayCreateDTO dto) {
-        StayResponseDTO created = stayService.createStay(dto);
+        StayResponseDTO created = stayService.create(dto);
 
         created.add(linkTo(methodOn(StayResource.class).findById(created.getId())).withSelfRel());
         created.add(linkTo(methodOn(StayResource.class).delete(created.getId())).withRel("delete"));

@@ -9,7 +9,7 @@ import jakarta.persistence.Id;
 import java.time.LocalDate;
 import java.util.Objects;
 
-@Schema(description = "Data Transfer Object used to update a stay record")
+@Schema(name = "StayUpdateDTO", description = "Data Transfer Object used to update a stay record")
 public class StayUpdateDTO {
 
     @Schema(description = "ID of the user associated with the stay", example = "1")

@@ -1,6 +1,7 @@
 package br.edu.ifmg.hotelbao.entities;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -16,6 +17,7 @@ public class PasswordRecover {
     @Column(nullable = false)
     private String token;
 
+    @Email
     @Column(nullable = false)
     private String email;
 

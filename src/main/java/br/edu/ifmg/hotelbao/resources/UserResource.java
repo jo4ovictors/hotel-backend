@@ -1,10 +1,8 @@
 package br.edu.ifmg.hotelbao.resources;
 
 import br.edu.ifmg.hotelbao.dtos.InvoiceDTO;
-import br.edu.ifmg.hotelbao.dtos.RoomDTO;
 import br.edu.ifmg.hotelbao.dtos.UserDTO;
 import br.edu.ifmg.hotelbao.dtos.UserInsertDTO;
-import br.edu.ifmg.hotelbao.entities.User;
 import br.edu.ifmg.hotelbao.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -15,20 +13,14 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+import java.net.URI;
 
 @RestController
 @RequestMapping(value = "/user")
@@ -37,9 +29,6 @@ public class UserResource {
 
     @Autowired
     private UserService userService;
-
-    @Autowired
-    private PagedResourcesAssembler<UserDTO> assembler;
 
     @Operation(summary = "List all users", description = "Returns a list of all registered users. Admin access required.")
     @ApiResponses({
@@ -55,26 +44,8 @@ public class UserResource {
             dto.add(linkTo(methodOn(UserResource.class).findById(dto.getId())).withSelfRel());
         });
 
-        return ResponseEntity.ok().body(page);
+        return ResponseEntity.ok(page);
     }
-
-
-
-    @GetMapping("user_info")
-    public ResponseEntity<?> getUserInfo(@AuthenticationPrincipal Jwt jwt) {
-        String login = jwt.getClaim("username");
-        User user = userService.findByLogin(login);
-
-        return ResponseEntity.ok(Map.of(
-                "id", user.getId(),
-                "username", user.getUsername(),
-                "authorities", jwt.getClaim("authorities"),
-                "token_id", jwt.getId(),
-                "issued_at", jwt.getIssuedAt(),
-                "expires_at", jwt.getExpiresAt()
-        ));
-    }
-
 
     @Operation(summary = "Get user by ID", description = "Returns a user based on the provided ID. Admin access required.")
     @ApiResponses({
@@ -83,7 +54,7 @@ public class UserResource {
             @ApiResponse(responseCode = "403", description = "Forbidden access")
     })
     @GetMapping(value = "/{id}", produces = "application/json")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_EMPLOYEE', 'ROLE_CLIENT')")
     public ResponseEntity<UserDTO> findById(
             @Parameter(description = "ID of the user to retrieve") @PathVariable Long id) {
         UserDTO dto = userService.findById(id);
@@ -96,7 +67,7 @@ public class UserResource {
 
         return ResponseEntity.ok().body(dto);
     }
-
+    
     @Operation(summary = "Create a new user", description = "Registers a new user. Requires ADMIN or EMPLOYEE role.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "User created successfully"),
@@ -111,7 +82,7 @@ public class UserResource {
         user.add(linkTo(methodOn(UserResource.class).findById(user.getId())).withSelfRel());
         user.add(linkTo(methodOn(UserResource.class).findAll(null)).withRel("all-users"));
 
-        URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(user.getId()).toUri();
+        URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(dto.getId()).toUri();
         return ResponseEntity.created(uri).body(user);
     }
 
@@ -156,7 +127,7 @@ public class UserResource {
     public ResponseEntity<UserDTO> signup(
             @Parameter(description = "User data for signup") @Valid @RequestBody UserInsertDTO dto) {
         UserDTO user = userService.signup(dto);
-        URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(user.getId()).toUri();
+        URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(dto.getId()).toUri();
         return ResponseEntity.created(uri).body(user);
     }
 
@@ -166,7 +137,7 @@ public class UserResource {
             @ApiResponse(responseCode = "404", description = "User not found")
     })
     @GetMapping(value = "/invoice/{id}", produces = "application/json")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_EMPLOYEE', 'ROLE_CLIENT')")
     public ResponseEntity<InvoiceDTO> findInvoice(
             @Parameter(description = "ID of the user to generate invoice for") @PathVariable Long id) {
         return ResponseEntity.ok().body(userService.newInvoice(id));
