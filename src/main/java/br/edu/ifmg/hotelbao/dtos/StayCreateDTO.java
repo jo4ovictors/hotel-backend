@@ -1,11 +1,11 @@
 package br.edu.ifmg.hotelbao.dtos;
 
 import br.edu.ifmg.hotelbao.entities.Stay;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.persistence.*;
+import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.FutureOrPresent;
+import jakarta.validation.constraints.NotNull;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Objects;
 
@@ -15,15 +15,21 @@ public class StayCreateDTO {
     @Schema(description = "Automatically generated ID of the stay", example = "1001", accessMode = Schema.AccessMode.READ_ONLY)
     private Long id;
 
+    @NotNull(message = "User ID must not be null")
     @Schema(description = "ID of the user making the reservation", example = "501")
     private Long userId;
 
+    @NotNull(message = "Room ID must not be null")
     @Schema(description = "ID of the room to be reserved", example = "302")
     private Long roomId;
 
+    @NotNull(message = "Check-in date is required")
+    @FutureOrPresent(message = "Check-in date must be today or in the future")
     @Schema(description = "Check-in date for the stay", example = "2025-07-01")
     private LocalDate checkIn;
 
+    @NotNull(message = "Check-out date is required")
+    @Future(message = "Check-out date must be in the future")
     @Schema(description = "Check-out date for the stay", example = "2025-07-05")
     private LocalDate checkOut;
 

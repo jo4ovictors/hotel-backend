@@ -16,17 +16,20 @@ public class Stay {
     private Long id;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "room_id")
+    @JoinColumn(name = "room_id", nullable = false)
     private Room room;
 
+    @Column(nullable = false)
     private LocalDate checkIn;
+
+    @Column(nullable = false)
     private LocalDate checkOut;
 
-    @Column(precision = 10, scale = 2)
+    @Column(nullable = false, precision = 10, scale = 2)
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private BigDecimal price;
 
@@ -105,8 +108,8 @@ public class Stay {
     public String toString() {
         return "Stay{" +
                 "id=" + id +
-                ", user=" + user +
-                ", room=" + room +
+                ", user=" + user.getId() +
+                ", room=" + room.getId() +
                 ", checkIn=" + checkIn +
                 ", checkOut=" + checkOut +
                 ", price=" + price +

@@ -78,6 +78,17 @@ public class RoomResourceIT {
     }
 
     @Test
+    public void insertShouldReturnForbiddenWhenNoToken() throws Exception {
+        RoomDTO dto = Factory.createRoomDTO();
+        String jsonBody = objectMapper.writeValueAsString(dto);
+
+        mockMvc.perform(post("/room")
+                        .content(jsonBody)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     public void updateShouldReturnRoomDTOWhenIdExists() throws Exception {
         RoomDTO dto = Factory.createRoomDTO();
         String jsonBody = objectMapper.writeValueAsString(dto);
@@ -93,24 +104,6 @@ public class RoomResourceIT {
     }
 
     @Test
-    public void deleteShouldReturnNoContentWhenIdExists() throws Exception {
-        mockMvc.perform(delete("/room/{id}", existingId)
-                        .header("Authorization", "Bearer " + token))
-                .andExpect(status().isNoContent());
-    }
-
-    @Test
-    public void insertShouldReturnForbiddenWhenNoToken() throws Exception {
-        RoomDTO dto = Factory.createRoomDTO();
-        String jsonBody = objectMapper.writeValueAsString(dto);
-
-        mockMvc.perform(post("/room")
-                        .content(jsonBody)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
     public void updateShouldReturnNotFoundWhenIdDoesNotExist() throws Exception {
         RoomDTO dto = Factory.createRoomDTO();
         String jsonBody = objectMapper.writeValueAsString(dto);
@@ -120,6 +113,13 @@ public class RoomResourceIT {
                         .content(jsonBody)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    public void deleteShouldReturnNoContentWhenIdExists() throws Exception {
+        mockMvc.perform(delete("/room/{id}", existingId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
     }
 
 }

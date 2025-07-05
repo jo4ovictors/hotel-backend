@@ -44,12 +44,12 @@ public class UserResourceIT {
     }
 
     @Test
-    void findAllShouldReturnListWhenAdmin() throws Exception {
+    void findAllShouldReturnPagedUsersWhenAdmin() throws Exception {
         mockMvc.perform(get("/user")
                         .header("Authorization", "Bearer " + token)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray());
+                .andExpect(jsonPath("$.content").isArray());
     }
 
     @Test
@@ -90,19 +90,7 @@ public class UserResourceIT {
         mockMvc.perform(post("/user")
                         .content(jsonBody)
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void signupShouldCreateUserWithoutAuth() throws Exception {
-        UserInsertDTO dto = Factory.createUserDTO();
-        String jsonBody = objectMapper.writeValueAsString(dto);
-
-        mockMvc.perform(post("/user/signup")
-                        .content(jsonBody)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.login").value("login"));
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -133,6 +121,29 @@ public class UserResourceIT {
         mockMvc.perform(delete("/user/{id}", nonExistingId)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void signupShouldCreateUserWithoutAuth() throws Exception {
+        UserInsertDTO dto = Factory.createUserDTO();
+        String jsonBody = objectMapper.writeValueAsString(dto);
+
+        mockMvc.perform(post("/user/signup")
+                        .content(jsonBody)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.login").value("login"));
+    }
+
+    @Test
+    public void findInvoiceShouldReturnInvoiceWhenAdminAuthorized() throws Exception {
+        mockMvc.perform(get("/user/invoice/{id}", existingId)
+                        .header("Authorization", "Bearer " + token)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.user.id").value(existingId))
+                .andExpect(jsonPath("$.total").exists())
+                .andExpect(jsonPath("$.stays").isArray());
     }
 
 }

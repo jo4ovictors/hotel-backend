@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -41,7 +42,7 @@ public class RoomResource {
                                     schema = @Schema(implementation = RoomDTO.class)))
             })
     @GetMapping(produces = "application/json")
-    public ResponseEntity<Page<RoomDTO>> findAll(Pageable pageable) {
+    public ResponseEntity<Page<RoomDTO>> findAll(@ParameterObject Pageable pageable) {
         Page<RoomDTO> page = roomService.findAll(pageable);
         page.forEach(this::addRoomLinks);
         return ResponseEntity.ok().body(page);
@@ -69,7 +70,7 @@ public class RoomResource {
 
     @Operation(
             summary = "Insert a new room",
-            description = "Creates a new room. Only ADMIN users can perform this operation.",
+            description = "Creates a new room. Only ADMIN and EMPLOYEE users can perform this operation.",
             responses = {
                     @ApiResponse(
                             responseCode = "201",
@@ -80,7 +81,7 @@ public class RoomResource {
                     @ApiResponse(responseCode = "400", description = "Invalid input data")
             })
     @PostMapping(produces = "application/json")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_EMPLOYEE')")
     public ResponseEntity<RoomDTO> insert(
             @Parameter(description = "Room data to insert") @Valid @RequestBody RoomDTO dto) {
         dto = roomService.insert(dto);
@@ -90,7 +91,7 @@ public class RoomResource {
     }
 
     @Operation(summary = "Update room",
-            description = "Updates the room with the given ID. Only ADMIN users can perform this operation.",
+            description = "Updates the room with the given ID. Only ADMIN and EMPLOYEE users can perform this operation.",
             responses = {
                     @ApiResponse(
                             responseCode = "200",
@@ -102,7 +103,7 @@ public class RoomResource {
                     @ApiResponse(responseCode = "404", description = "Room not found")
             })
     @PutMapping(value = "/{id}", produces = "application/json")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_EMPLOYEE')")
     public ResponseEntity<RoomDTO> update(
             @Parameter(description = "ID of the room to update") @PathVariable Long id,
             @Parameter(description = "Updated room data") @Valid @RequestBody RoomDTO dto) {

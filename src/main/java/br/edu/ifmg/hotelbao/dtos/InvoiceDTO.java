@@ -52,4 +52,5 @@ public class InvoiceDTO {
     public void setTotal(BigDecimal total) {
         this.total = total;
     }
+
 }

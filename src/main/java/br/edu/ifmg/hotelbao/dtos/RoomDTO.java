@@ -3,6 +3,7 @@ package br.edu.ifmg.hotelbao.dtos;
 import br.edu.ifmg.hotelbao.entities.Room;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Positive;
 import org.springframework.hateoas.RepresentationModel;
 
 import java.math.BigDecimal;
@@ -17,6 +18,7 @@ public class RoomDTO extends RepresentationModel<RoomDTO> {
     @Schema(description = "Detailed textual description of the room", example = "Deluxe room with ocean view.")
     private String description;
 
+    @Positive
     @Schema(description = "Daily price for booking the room", example = "199.99", type = "number", format = "bigdecimal")
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private BigDecimal price;

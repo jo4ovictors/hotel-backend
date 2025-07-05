@@ -34,7 +34,7 @@ public class PasswordRecoverResource {
             @ApiResponse(responseCode = "400", description = "Invalid input data"),
             @ApiResponse(responseCode = "404", description = "User not found", content = @Content)
     })
-    @PostMapping(value = "recover-token")
+    @PostMapping(value = "/recover-token")
     public ResponseEntity<Void> createRecoverToken(@Valid @RequestBody RequestTokenDTO dto) {
         passwordRecoverService.createRecoverToken(dto);
         return ResponseEntity.noContent().build();
@@ -49,7 +49,7 @@ public class PasswordRecoverResource {
             @ApiResponse(responseCode = "400", description = "Invalid token or password format"),
             @ApiResponse(responseCode = "404", description = "Token not found or expired")
     })
-    @PostMapping(value = "new-password")
+    @PostMapping(value = "/new-password")
     public ResponseEntity<Void> saveNewPassword(@Valid @RequestBody NewPasswordDTO dto) {
         passwordRecoverService.savePassword(dto);
         return ResponseEntity.noContent().build();

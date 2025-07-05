@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,24 +31,37 @@ public class UserResource {
     @Autowired
     private UserService userService;
 
-    @Operation(summary = "List all users", description = "Returns a list of all registered users. Admin access required.")
+    @Operation(
+            summary = "List all users",
+            description = """
+                    Returns a paginated list of all registered users.
+                    
+                    - **ADMIN**: Access to all users
+                    - **EMPLOYEE**: Access only to CLIENT users"""
+    )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "List returned successfully"),
             @ApiResponse(responseCode = "403", description = "Forbidden access")
     })
     @GetMapping(produces = "application/json")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
-    public ResponseEntity<Page<UserDTO>> findAll(Pageable pageable) {
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_EMPLOYEE')")
+    public ResponseEntity<Page<UserDTO>> findAll(@ParameterObject Pageable pageable) {
         Page<UserDTO> page = userService.findAll(pageable);
 
-        page.forEach(dto -> {
-            dto.add(linkTo(methodOn(UserResource.class).findById(dto.getId())).withSelfRel());
-        });
+        page.forEach(dto -> dto.add(linkTo(methodOn(UserResource.class).findById(dto.getId())).withSelfRel()));
 
         return ResponseEntity.ok(page);
     }
 
-    @Operation(summary = "Get user by ID", description = "Returns a user based on the provided ID. Admin access required.")
+    @Operation(
+            summary = "Get user by ID",
+            description = """
+                    Retrieves a specific user's details by ID.
+                    
+                    - **ADMIN**: Can access any user
+                    - **EMPLOYEE**: Can access their own data and CLIENT users
+                    - **CLIENT**: Can access their own data only"""
+    )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "User found"),
             @ApiResponse(responseCode = "404", description = "User not found"),
@@ -60,15 +74,22 @@ public class UserResource {
         UserDTO dto = userService.findById(id);
 
         dto.add(linkTo(methodOn(UserResource.class).findById(id)).withSelfRel());
-        dto.add(linkTo(methodOn(UserResource.class).findAll(null)).withRel("all-users"));
+        dto.add(linkTo(methodOn(UserResource.class).findAll(Pageable.unpaged())).withRel("all-users"));
         dto.add(linkTo(methodOn(UserResource.class).update(id, dto)).withRel("update"));
         dto.add(linkTo(methodOn(UserResource.class).delete(id)).withRel("delete"));
         dto.add(linkTo(methodOn(UserResource.class).findInvoice(id)).withRel("invoice"));
 
         return ResponseEntity.ok().body(dto);
     }
-    
-    @Operation(summary = "Create a new user", description = "Registers a new user. Requires ADMIN or EMPLOYEE role.")
+
+    @Operation(
+            summary = "Create a new user",
+            description = """
+                    Registers a new user in the system.
+                    
+                    - **ADMIN**: Can create any type of user
+                    - **EMPLOYEE**: Can create CLIENT users only"""
+    )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "User created successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input data")
@@ -80,45 +101,62 @@ public class UserResource {
         UserDTO user = userService.insert(dto);
 
         user.add(linkTo(methodOn(UserResource.class).findById(user.getId())).withSelfRel());
-        user.add(linkTo(methodOn(UserResource.class).findAll(null)).withRel("all-users"));
+        user.add(linkTo(methodOn(UserResource.class).findAll(Pageable.unpaged())).withRel("all-users"));
 
         URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(dto.getId()).toUri();
         return ResponseEntity.created(uri).body(user);
     }
 
-    @Operation(summary = "Update a user", description = "Updates user data. Only accessible by admins.")
+    @Operation(
+            summary = "Update a user",
+            description = """
+                    Updates user information by ID.
+                    
+                    - **ADMIN**: Can update any user
+                    - **EMPLOYEE**: Can update CLIENT users only"""
+    )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "User updated successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid data provided"),
             @ApiResponse(responseCode = "404", description = "User not found")
     })
     @PutMapping(value = "/{id}", produces = "application/json")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_EMPLOYEE')")
     public ResponseEntity<UserDTO> update(
             @Parameter(description = "ID of the user to update") @PathVariable Long id,
             @Parameter(description = "Updated user data") @Valid @RequestBody UserDTO dto) {
         dto = userService.update(id, dto);
 
         dto.add(linkTo(methodOn(UserResource.class).findById(dto.getId())).withSelfRel());
-        dto.add(linkTo(methodOn(UserResource.class).findAll(null)).withRel("all-users"));
+        dto.add(linkTo(methodOn(UserResource.class).findAll(Pageable.unpaged())).withRel("all-users"));
 
         return ResponseEntity.ok().body(dto);
     }
 
-    @Operation(summary = "Delete a user", description = "Deletes a user by ID. Only accessible by admins.")
+    @Operation(
+            summary = "Delete a user",
+            description = """
+                    Deletes a user by ID.
+                    
+                    - **ADMIN**: Can delete any user
+                    - **EMPLOYEE**: Can delete CLIENT users only"""
+    )
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "User deleted successfully"),
             @ApiResponse(responseCode = "404", description = "User not found")
     })
     @DeleteMapping(value = "/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_EMPLOYEE')")
     public ResponseEntity<Void> delete(
             @Parameter(description = "ID of the user to delete") @PathVariable Long id) {
         userService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Signup new user", description = "Public endpoint to register a new user into the system.")
+    @Operation(
+            summary = "Signup new user",
+            description = "Public endpoint to register a new user. No authentication is required."
+    )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "User signed up successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input data")
@@ -127,11 +165,21 @@ public class UserResource {
     public ResponseEntity<UserDTO> signup(
             @Parameter(description = "User data for signup") @Valid @RequestBody UserInsertDTO dto) {
         UserDTO user = userService.signup(dto);
+        user.add(linkTo(methodOn(UserResource.class).findById(user.getId())).withSelfRel());
+
         URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(dto.getId()).toUri();
         return ResponseEntity.created(uri).body(user);
     }
 
-    @Operation(summary = "Get user invoice", description = "Generates and retrieves a user invoice by user ID. Admin access required.")
+    @Operation(
+            summary = "Get user invoice",
+            description = """
+                    Generates and returns a user invoice by user ID.
+                    
+                    - **ADMIN**: Can access any user's invoice
+                    - **EMPLOYEE**: Can access their own invoice and CLIENT invoices
+                    - **CLIENT**: Can access their own invoice only"""
+    )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Invoice generated successfully"),
             @ApiResponse(responseCode = "404", description = "User not found")

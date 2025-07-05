@@ -5,9 +5,9 @@ import br.edu.ifmg.hotelbao.dtos.NewPasswordDTO;
 import br.edu.ifmg.hotelbao.dtos.RequestTokenDTO;
 import br.edu.ifmg.hotelbao.entities.PasswordRecover;
 import br.edu.ifmg.hotelbao.entities.User;
-import br.edu.ifmg.hotelbao.repository.PasswordRecoverRepository;
-import br.edu.ifmg.hotelbao.repository.UserRepository;
-import br.edu.ifmg.hotelbao.services.exceptions.ResourceNotFound;
+import br.edu.ifmg.hotelbao.repositories.PasswordRecoverRepository;
+import br.edu.ifmg.hotelbao.repositories.UserRepository;
+import br.edu.ifmg.hotelbao.services.exceptions.ResourceNotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -47,7 +47,7 @@ public class  PasswordRecoverService{
         User user = userRepository.findByEmail(dto.getEmail());
 
         if (user == null) {
-            throw new ResourceNotFound("[!] -> Email not found!");
+            throw new ResourceNotFoundException("[!] -> Email not found!");
         }
 
         String token = UUID.randomUUID().toString();
@@ -64,16 +64,16 @@ public class  PasswordRecoverService{
         emailService.sendEmail(new EmailDTO(user.getEmail(), "Recuperação de Senha", body));
     }
 
-
     public void savePassword(@Valid NewPasswordDTO dto) {
         List<PasswordRecover> list = passwordRecoverRepository.searchValidToken(dto.getToken(), Instant.now());
 
         if (list.isEmpty()) {
-            throw new ResourceNotFound("[!] -> Token not found!");
+            throw new ResourceNotFoundException("[!] -> Token not found!");
         }
 
         User user = userRepository.findByEmail(list.getFirst().getEmail());
         user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
         userRepository.save(user);
     }
+
 }

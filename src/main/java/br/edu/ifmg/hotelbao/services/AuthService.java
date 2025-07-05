@@ -1,14 +1,18 @@
 package br.edu.ifmg.hotelbao.services;
 
+import br.edu.ifmg.hotelbao.constants.RoleLevel;
 import br.edu.ifmg.hotelbao.entities.User;
-import br.edu.ifmg.hotelbao.repository.UserRepository;
-import br.edu.ifmg.hotelbao.services.exceptions.ResourceNotFound;
+import br.edu.ifmg.hotelbao.repositories.UserRepository;
+import br.edu.ifmg.hotelbao.services.exceptions.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
+
+import java.util.Comparator;
+import java.util.Optional;
 
 
 @Service
@@ -31,10 +35,10 @@ public class AuthService {
         }
 
         return userRepository.findByLogin(login)
-                .orElseThrow(() -> new ResourceNotFound("[!] -> User not found: " + login + "!"));
+                .orElseThrow(() -> new ResourceNotFoundException("[!] -> User not found: " + login + "!"));
     }
 
-    public boolean doesNotHaveAuthority(String role) {
+    public Optional<RoleLevel> getHighestRoleLevel() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (!(authentication.getPrincipal() instanceof Jwt jwt)) {
@@ -43,17 +47,18 @@ public class AuthService {
 
         var roles = jwt.getClaimAsStringList("authorities");
 
-        return (roles == null || !roles.contains(role));
+        if (roles == null || roles.isEmpty()) return Optional.empty();
+
+        return roles.stream()
+                .map(RoleLevel::fromString)
+                .flatMap(Optional::stream)
+                .max(Comparator.comparingInt(RoleLevel::getLevel));
     }
 
-    public boolean isClient(User user) {
-        return user.getRoles().stream()
-                .anyMatch(role -> "ROLE_CLIENT".equals(role.getAuthority()));
-    }
-
-    public boolean isAdminOrEmployee(User user) {
-        return user.getRoles().stream()
-                .anyMatch(role -> "ROLE_ADMIN".equals(role.getAuthority()) || "ROLE_EMPLOYEE".equals(role.getAuthority()));
+    public boolean hasMinimumAuthority(RoleLevel requiredLevel) {
+        return getHighestRoleLevel()
+                .map(current -> current.getLevel() >= requiredLevel.getLevel())
+                .orElse(false);
     }
 
 }

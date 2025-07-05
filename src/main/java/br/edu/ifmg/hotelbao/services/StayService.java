@@ -1,22 +1,23 @@
 package br.edu.ifmg.hotelbao.services;
 
-import br.edu.ifmg.hotelbao.constants.RoleEnum;
+import br.edu.ifmg.hotelbao.constants.RoleLevel;
 import br.edu.ifmg.hotelbao.dtos.*;
 import br.edu.ifmg.hotelbao.entities.Room;
 import br.edu.ifmg.hotelbao.entities.Stay;
 import br.edu.ifmg.hotelbao.entities.User;
-import br.edu.ifmg.hotelbao.repository.RoomRepository;
-import br.edu.ifmg.hotelbao.repository.StayRepository;
-import br.edu.ifmg.hotelbao.repository.UserRepository;
+import br.edu.ifmg.hotelbao.repositories.RoomRepository;
+import br.edu.ifmg.hotelbao.repositories.StayRepository;
+import br.edu.ifmg.hotelbao.repositories.UserRepository;
+import br.edu.ifmg.hotelbao.services.exceptions.AccessDeniedException;
 import br.edu.ifmg.hotelbao.services.exceptions.BusinessValidationException;
 import br.edu.ifmg.hotelbao.services.exceptions.DatabaseException;
-import br.edu.ifmg.hotelbao.services.exceptions.ResourceNotFound;
+import br.edu.ifmg.hotelbao.services.exceptions.ResourceNotFoundException;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.AccessDeniedException;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,45 +30,46 @@ import java.util.List;
 @Service
 public class StayService {
 
-    @Autowired
-    private StayRepository stayRepository;
+    @Autowired private StayRepository stayRepository;
+    @Autowired private UserRepository userRepository;
+    @Autowired private RoomRepository roomRepository;
+    @Autowired private AuthService authService;
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private RoomRepository roomRepository;
-
-    @Autowired
-    private AuthService authService;
+    private static final String NOT_FOUND_STAY = "[!] -> Stay not found!";
+    private static final String NOT_FOUND_USER = "[!] -> User not found!";
+    private static final String ACCESS_DENIED = "[!] -> Access denied!";
 
     @Transactional(readOnly = true)
     public Page<StayResponseDTO> findAll(Pageable pageable) {
-        return stayRepository.findAll(pageable).map(StayResponseDTO::new);
+        RoleLevel role = authService.getHighestRoleLevel()
+                .orElseThrow(() -> new AccessDeniedException("[!] -> No role assigned to the authenticated user."));
+
+        Page<Stay> stays;
+
+        if (role == RoleLevel.ROLE_ADMIN) {
+            stays = stayRepository.findAll(pageable);
+        } else if (role == RoleLevel.ROLE_EMPLOYEE) {
+            stays = stayRepository.findByUserRole(RoleLevel.ROLE_CLIENT.name(), pageable);
+        } else if (role == RoleLevel.ROLE_CLIENT) {
+            Long userId = authService.getAuthenticatedUser().getId();
+            stays = stayRepository.findByUserId(userId, pageable);
+        } else {
+            throw new AccessDeniedException("[!] -> You are not authorized to view stays.");
+        }
+
+        return stays.map(StayResponseDTO::new);
     }
 
     @Transactional(readOnly = true)
     public StayResponseDTO findById(Long id) {
-        User currentUser = authService.getAuthenticatedUser();
-
-        Stay entity = stayRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFound("[!] -> Stay not found!"));
-
-        if (authService.doesNotHaveAuthority("ROLE_ADMIN") && !currentUser.getId().equals(entity.getUser().getId())) {
-            throw new AccessDeniedException("[!] -> You do not have permission to access this resource!");
-        }
-
-        return new StayResponseDTO(entity);
+        Stay stay = getStayById(id);
+        validateUserAccess(stay.getUser().getId());
+        return new StayResponseDTO(stay);
     }
 
     @Transactional(readOnly = true)
     public List<StayResponseDTO> findByUser(Long userId) {
-        User currentUser = authService.getAuthenticatedUser();
-
-        if (authService.doesNotHaveAuthority("ROLE_ADMIN") && !currentUser.getId().equals(userId)) {
-            throw new AccessDeniedException("[!] -> You do not have permission to access this resource!");
-        }
-
+        validateUserAccess(userId);
         return stayRepository.findByUserId(userId).stream()
                 .map(StayResponseDTO::new)
                 .toList();
@@ -75,93 +77,193 @@ public class StayService {
 
     @Transactional
     public StayResponseDTO create(@NotNull StayCreateDTO dto) {
-        User currentUser = authService.getAuthenticatedUser();
+        User requester = authService.getAuthenticatedUser();
+        RoleLevel role = getCurrentRoleLevel();
 
-        // Verifica se usuário atual é CLIENT
-        boolean isCurrentUserClient = !authService.doesNotHaveAuthority("ROLE_CLIENT");
+        User user = getUserById(dto.getUserId());
+        Room room = getAvailableRoom(dto.getRoomId());
 
-        // Se for CLIENT, só pode criar estadia para ele mesmo
-        if (isCurrentUserClient && !currentUser.getId().equals(dto.getUserId())) {
-            throw new AccessDeniedException("[!] -> Clients can only create stays for themselves!");
+        if (role == RoleLevel.ROLE_CLIENT && !requester.getId().equals(user.getId())) {
+            throw new AccessDeniedException("[!] -> CLIENTS can only create stays for themselves.");
         }
 
-        // Busca o usuário da estadia
-        User user = userRepository.findById(dto.getUserId())
-                .orElseThrow(() -> new ResourceNotFound("[!] -> User not found!"));
+        validateCheckInCheckout(dto.getCheckIn(), dto.getCheckOut());
+        validateRoomAvailability(dto.getRoomId(), dto.getCheckIn(), dto.getCheckOut(), null);
 
-        // Busca o quarto
-        Room room = roomRepository.findActiveById(dto.getRoomId())
-                .orElseThrow(() -> new ResourceNotFound("[!] -> Room not found!"));
-
-        // Validação: quarto já está ocupado no período?
-        if (stayRepository.isRoomOccupied(dto.getRoomId(), dto.getCheckIn(), dto.getCheckOut(), null)) {
-            throw new BusinessValidationException("[!] -> Room is already occupied in this period.");
-        }
-
-        // Validação: datas de check-in e check-out
-        this.validateCheckInCheckout(dto.getCheckIn(), dto.getCheckOut());
-
-        // Calcula valor total
-        long dias = ChronoUnit.DAYS.between(dto.getCheckIn(), dto.getCheckOut());
-        BigDecimal totalPrice = room.getPrice().multiply(BigDecimal.valueOf(dias));
-
-        // Cria entidade
-        Stay stay = new Stay();
-        stay.setUser(user);
-        stay.setRoom(room);
-        stay.setCheckIn(dto.getCheckIn());
-        stay.setCheckOut(dto.getCheckOut());
-        stay.setPrice(totalPrice);
-
-        Stay saved = stayRepository.save(stay);
-        return new StayResponseDTO(saved);
+        Stay stay = buildStay(user, room, dto.getCheckIn(), dto.getCheckOut());
+        return new StayResponseDTO(stayRepository.save(stay));
     }
 
     @Transactional
-    public StayResponseDTO update(Long id, @NotNull StayUpdateDTO dto) {
-        Stay stay = stayRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFound("[!] -> Stay not found!"));
+    public StayResponseDTO update(Long id, StayUpdateDTO dto) {
+        Stay stay = getStayById(id);
+        User requester = authService.getAuthenticatedUser();
+        RoleLevel role = getCurrentRoleLevel();
 
-        Room room = roomRepository.findActiveById(dto.getRoomId())
-                .orElseThrow(() -> new ResourceNotFound("[!] -> Room not found!"));
-
-        if (dto.getCheckOut().isBefore(dto.getCheckIn()) || dto.getCheckOut().isEqual(dto.getCheckIn())) {
-            throw new BusinessValidationException("[!] -> Check-out must be after check-in!");
+        if (role == RoleLevel.ROLE_CLIENT && !dto.getUserId().equals(requester.getId())) {
+            throw new AccessDeniedException("[!] -> CLIENTS can only update their own stays.");
         }
 
-        boolean isOccupied = stayRepository.isRoomOccupied(dto.getRoomId(), dto.getCheckIn(), dto.getCheckOut(), id);
-        if (isOccupied) {
-            throw new BusinessValidationException("[!] -> Room is already occupied in this period!");
+        if (isNotUpcomingStay(stay)) {
+            throw new AccessDeniedException("[!] -> Only upcoming stays can be updated.");
         }
 
-        long dias = ChronoUnit.DAYS.between(dto.getCheckIn(), dto.getCheckOut());
+        Room room = getAvailableRoom(dto.getRoomId());
 
-        BigDecimal totalPrice = room.getPrice().multiply(BigDecimal.valueOf(dias));
+        validateCheckInCheckout(dto.getCheckIn(), dto.getCheckOut());
+        validateRoomAvailability(dto.getRoomId(), dto.getCheckIn(), dto.getCheckOut(), id);
 
         stay.setRoom(room);
         stay.setCheckIn(dto.getCheckIn());
         stay.setCheckOut(dto.getCheckOut());
-        stay.setPrice(totalPrice);
+        stay.setPrice(calculateTotalPrice(room.getPrice(), dto.getCheckIn(), dto.getCheckOut()));
 
-        Stay saved = stayRepository.save(stay);
-        return new StayResponseDTO(saved);
+        if (!stay.getUser().getId().equals(dto.getUserId())) {
+            if (role == RoleLevel.ROLE_ADMIN || role == RoleLevel.ROLE_EMPLOYEE) {
+                User newUser = userRepository.findById(dto.getUserId())
+                        .orElseThrow(() -> new ResourceNotFoundException("[!] -> New user not found!"));
+                stay.setUser(newUser);
+            } else {
+                throw new AccessDeniedException("[!] -> Only ADMIN or EMPLOYEE can change the stay's user!");
+            }
+        }
+
+        return new StayResponseDTO(stayRepository.save(stay));
     }
 
     @Transactional
     public void delete(Long id) {
-        Stay stay = stayRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFound("[!] -> Stay not found!"));
+        Stay stay = getStayById(id);
+        User requester = authService.getAuthenticatedUser();
+        RoleLevel role = getCurrentRoleLevel();
 
-        User user = userRepository.findById(stay.getUser().getId())
-                .orElseThrow(() -> new ResourceNotFound("[!] -> User not found!"));
+        switch (role) {
+            case ROLE_ADMIN -> performDelete(id);
 
-        boolean isClient = user.getRoles().stream()
-                .anyMatch(role -> role.getAuthority().equals(RoleEnum.ROLE_CLIENT.name()));
+            case ROLE_EMPLOYEE -> {
+                if (!stay.getUser().hasOnlyRole(RoleLevel.ROLE_CLIENT)) {
+                    throw new AccessDeniedException("[!] -> EMPLOYEES can only delete CLIENT stays.");
+                }
+                if (isNotUpcomingStay(stay)) {
+                    throw new AccessDeniedException("[!] -> Only upcoming stays can be deleted.");
+                }
+                performDelete(id);
+            }
 
-        if (isClient && !stay.getUser().getId().equals(user.getId())) {
-            throw new BusinessValidationException("Operation not permitted");
+            case ROLE_CLIENT -> {
+                if (!requester.getId().equals(stay.getUser().getId())) {
+                    throw new AccessDeniedException("[!] -> CLIENTS can only delete their own stays.");
+                }
+                if (isNotUpcomingStay(stay)) {
+                    throw new AccessDeniedException("[!] -> Only upcoming stays can be deleted.");
+                }
+                performDelete(id);
+            }
+
+            default -> throw new AccessDeniedException(ACCESS_DENIED);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public StayReportDTO findCheapestStay(Long userId) {
+        validateUserAccess(userId);
+        Stay stay = stayRepository.findTopByUserIdOrderByPriceAsc(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("[!] -> No stays found!"));
+        return new StayReportDTO(stay);
+    }
+
+    @Transactional(readOnly = true)
+    public StayReportDTO findMostExpensiveStay(Long userId) {
+        validateUserAccess(userId);
+        Stay stay = stayRepository.findTopByUserIdOrderByPriceDesc(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("[!] -> No stays found!"));
+        return new StayReportDTO(stay);
+    }
+
+    @Transactional(readOnly = true)
+    public StayTotalDTO calculateTotalSpentByUser(Long userId) {
+        validateUserAccess(userId);
+        BigDecimal total = stayRepository.findTotalAmountSpentByUser(userId);
+        return new StayTotalDTO(total);
+    }
+
+    private Stay getStayById(Long id) {
+        return stayRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(NOT_FOUND_STAY));
+    }
+
+    private User getUserById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(NOT_FOUND_USER));
+    }
+
+    private Room getAvailableRoom(Long roomId) {
+        return roomRepository.findByIdAndIsActiveTrue(roomId)
+                .orElseThrow(() -> new ResourceNotFoundException("[!] -> Room not found or inactive!"));
+    }
+
+    private boolean isNotUpcomingStay(Stay stay) {
+        return stay.getCheckIn().isBefore(LocalDate.now());
+    }
+
+    private void validateRoomAvailability(Long roomId, LocalDate checkIn, LocalDate checkOut, Long excludeStayId) {
+        boolean occupied = stayRepository.isRoomOccupied(roomId, checkIn, checkOut, excludeStayId);
+        if (occupied) {
+            throw new BusinessValidationException("[!] -> Room is already occupied in this period.");
+        }
+    }
+
+    private void validateCheckInCheckout(LocalDate checkIn, LocalDate checkOut) {
+        LocalDate today = LocalDate.now();
+
+        if (checkIn.isBefore(today)) {
+            throw new BusinessValidationException("[!] -> Check-in is in the past!");
+        }
+        if (!checkOut.isAfter(checkIn)) {
+            throw new BusinessValidationException("[!] -> Check-out must be after check-in!");
+        }
+    }
+
+    private void validateUserAccess(Long targetUserId) {
+        User current = authService.getAuthenticatedUser();
+
+        if (authService.hasMinimumAuthority(RoleLevel.ROLE_ADMIN)) return;
+
+        if (authService.hasMinimumAuthority(RoleLevel.ROLE_EMPLOYEE)) {
+            if (current.getId().equals(targetUserId)) return;
+
+            User target = getUserById(targetUserId);
+            if (target.hasOnlyRole(RoleLevel.ROLE_CLIENT)) return;
+
+            throw new AccessDeniedException("[!] -> EMPLOYEE can only access CLIENT data or their own.");
         }
 
+        if (!current.getId().equals(targetUserId)) {
+            throw new AccessDeniedException("[!] -> CLIENT can only access their own data.");
+        }
+    }
+
+    private Stay buildStay(User user, Room room, LocalDate checkIn, LocalDate checkOut) {
+        Stay stay = new Stay();
+        stay.setUser(user);
+        stay.setRoom(room);
+        stay.setCheckIn(checkIn);
+        stay.setCheckOut(checkOut);
+        stay.setPrice(calculateTotalPrice(room.getPrice(), checkIn, checkOut));
+        return stay;
+    }
+
+    private BigDecimal calculateTotalPrice(BigDecimal dailyRate, LocalDate checkIn, LocalDate checkOut) {
+        long days = ChronoUnit.DAYS.between(checkIn, checkOut);
+        return dailyRate.multiply(BigDecimal.valueOf(days));
+    }
+
+    private RoleLevel getCurrentRoleLevel() {
+        return authService.getHighestRoleLevel()
+                .orElseThrow(() -> new AccessDeniedException("[!] -> No role assigned to the authenticated user."));
+    }
+
+    private void performDelete(Long id) {
         try {
             stayRepository.deleteById(id);
         } catch (DataIntegrityViolationException e) {
@@ -169,55 +271,5 @@ public class StayService {
         }
     }
 
-    @Transactional(readOnly = true)
-    public StayReportDTO findCheapestStay(Long userId) {
-        User currentUser = authService.getAuthenticatedUser();
-
-        if (authService.doesNotHaveAuthority("ROLE_ADMIN") && !currentUser.getId().equals(userId)) {
-            throw new AccessDeniedException("[!] -> You do not have permission to access this resource!");
-        }
-
-        Stay stay = stayRepository.findTopByUserIdOrderByPriceAsc(userId)
-                .orElseThrow(() -> new ResourceNotFound("[!] -> No stays found!"));
-        return new StayReportDTO(stay);
-    }
-
-    @Transactional(readOnly = true)
-    public StayReportDTO findMostExpensiveStay(Long userId) {
-        User currentUser = authService.getAuthenticatedUser();
-
-        if (authService.doesNotHaveAuthority("ROLE_ADMIN") && !currentUser.getId().equals(userId)) {
-            throw new AccessDeniedException("[!] -> You do not have permission to access this resource!");
-        }
-
-        Stay stay = stayRepository.findTopByUserIdOrderByPriceDesc(userId)
-                .orElseThrow(() -> new ResourceNotFound("[!] -> No stays found!"));
-        return new StayReportDTO(stay);
-    }
-
-    @Transactional(readOnly = true)
-    public StayTotalDTO calculateTotalSpentByUser(Long userId) {
-        User currentUser = authService.getAuthenticatedUser();
-
-        if (authService.doesNotHaveAuthority("ROLE_ADMIN") && !currentUser.getId().equals(userId)) {
-            throw new AccessDeniedException("[!] -> You do not have permission to access this resource!");
-        }
-
-        BigDecimal total = stayRepository.findTotalAmountSpentByUser(userId);
-        return new StayTotalDTO(total);
-    }
-
-    private void validateCheckInCheckout(LocalDate checkIn, LocalDate checkOut) {
-        LocalDate today = LocalDate.now();
-
-        if (checkIn.isBefore(today)) {
-            throw new BusinessValidationException("[!] -> Check-in is in the past.");
-        }
-
-        if (!checkOut.isAfter(checkIn)) {
-            throw new BusinessValidationException("[!] -> Check-out must be after check-in.");
-        }
-
-    }
-
 }
+

@@ -2,6 +2,8 @@ package br.edu.ifmg.hotelbao.entities;
 
 import jakarta.persistence.*;
 
+import java.util.Objects;
+
 @Entity
 @Table(name = "tb_address")
 public class Address {
@@ -10,19 +12,19 @@ public class Address {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
     private String street;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private String city;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private String state;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private String postalCode;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private String country;
 
     public Address() {}
@@ -81,6 +83,29 @@ public class Address {
 
     public void setCountry(String country) {
         this.country = country;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof Address address)) return false;
+        return Objects.equals(id, address.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(id);
+    }
+
+    @Override
+    public String toString() {
+        return "Address{" +
+                "id=" + id +
+                ", street='" + street + '\'' +
+                ", city='" + city + '\'' +
+                ", state='" + state + '\'' +
+                ", postalCode='" + postalCode + '\'' +
+                ", country='" + country + '\'' +
+                '}';
     }
 
 }

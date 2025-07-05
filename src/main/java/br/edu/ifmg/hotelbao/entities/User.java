@@ -1,13 +1,11 @@
 package br.edu.ifmg.hotelbao.entities;
 
+import br.edu.ifmg.hotelbao.constants.RoleLevel;
 import jakarta.persistence.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 @Entity
 @Table(name = "tb_user")
@@ -23,26 +21,26 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String lastName;
 
-    @Column(unique = true)
+    @Column(unique = true, nullable = false)
     private String email;
 
-    @Column(unique = true)
+    @Column(unique = true, nullable = false)
     private String login;
 
     @Column(nullable = false)
     private String password;
 
-    @Column(unique = true)
+    @Column(unique = true, nullable = false)
     private String phone;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "tb_user_role",
                 joinColumns = @JoinColumn(name = "user_id"),
                 inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<Role> roles = new HashSet<>();
 
-    @OneToOne(cascade = CascadeType.ALL, optional = true)
+    @OneToOne(cascade = CascadeType.ALL, optional = false)
     @JoinColumn(name = "address_id", referencedColumnName = "id")
     private Address address;
 
@@ -158,8 +156,17 @@ public class User implements UserDetails {
         roles.add(role);
     }
 
-    public boolean hasRole(String roleName) {
-        return !roles.stream().filter(r -> r.getAuthority().equals(roleName)).toList().isEmpty();
+    public boolean hasOnlyRole(RoleLevel level) {
+        return this.getRoles().size() == 1 &&
+                this.getRoles().stream().anyMatch(r -> r.getAuthority().equals(level.name()));
+    }
+
+    public Optional<RoleLevel> getHighestRoleLevel() {
+        return roles.stream()
+                .map(Role::getAuthority)
+                .map(RoleLevel::fromString)
+                .flatMap(Optional::stream)
+                .max(Comparator.comparingInt(RoleLevel::getLevel));
     }
 
     @Override

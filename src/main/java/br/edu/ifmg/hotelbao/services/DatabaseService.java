@@ -1,12 +1,19 @@
 package br.edu.ifmg.hotelbao.services;
 
-import br.edu.ifmg.hotelbao.repository.*;
+import br.edu.ifmg.hotelbao.constants.RoleLevel;
+import br.edu.ifmg.hotelbao.dtos.UserInsertDTO;
+import br.edu.ifmg.hotelbao.entities.User;
+import br.edu.ifmg.hotelbao.repositories.*;
+import br.edu.ifmg.hotelbao.services.exceptions.AccessDeniedException;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 @Service
 public class DatabaseService {
+
+    @Autowired
+    private AuthService authService;
 
     @Autowired
     private AddressRepository addressRepository;
@@ -26,13 +33,19 @@ public class DatabaseService {
     @Autowired
     private PasswordRecoverRepository passwordRecoverRepository;
 
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
+    @Transactional
     public void deleteDatabase() {
-        addressRepository.deleteAll();
+
+        if (!authService.hasMinimumAuthority(RoleLevel.ROLE_ADMIN)) {
+            throw new AccessDeniedException("[!] -> Only ADMINS can perform this operation!");
+        }
+
         passwordRecoverRepository.deleteAll();
-        userRepository.deleteAll();
-        roomRepository.deleteAll();
         stayRepository.deleteAll();
+        roomRepository.deleteAll();
+        userRepository.deleteAll();
+        addressRepository.deleteAll();
+
     }
 
 }

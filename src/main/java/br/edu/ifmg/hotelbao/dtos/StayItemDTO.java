@@ -1,6 +1,5 @@
 package br.edu.ifmg.hotelbao.dtos;
 
-import br.edu.ifmg.hotelbao.entities.Stay;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;

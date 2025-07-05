@@ -6,19 +6,19 @@ import java.util.List;
 
 public class ValidationError extends StandardError {
 
-    private List<FieldMessage> erros = new ArrayList<FieldMessage>();
+    private List<FieldMessage> errors = new ArrayList<FieldMessage>();
 
     public ValidationError() {}
 
     public List<FieldMessage> getFieldMessages() {
-        return erros;
+        return errors;
     }
 
     public void setFieldMessages(List<FieldMessage> fieldMessages) {
-        this.erros = fieldMessages;
+        this.errors = fieldMessages;
     }
 
     public void addFieldMessage(String field, String message) {
-        this.erros.add(new FieldMessage(field, message));
+        this.errors.add(new FieldMessage(field, message));
     }
 }

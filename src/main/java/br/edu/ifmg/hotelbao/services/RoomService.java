@@ -2,8 +2,8 @@ package br.edu.ifmg.hotelbao.services;
 
 import br.edu.ifmg.hotelbao.dtos.RoomDTO;
 import br.edu.ifmg.hotelbao.entities.Room;
-import br.edu.ifmg.hotelbao.repository.RoomRepository;
-import br.edu.ifmg.hotelbao.services.exceptions.ResourceNotFound;
+import br.edu.ifmg.hotelbao.repositories.RoomRepository;
+import br.edu.ifmg.hotelbao.services.exceptions.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,12 +18,12 @@ public class RoomService {
 
     @Transactional(readOnly = true)
     public Page<RoomDTO> findAll(Pageable pageable) {
-        return roomRepository.findAll(pageable).map(RoomDTO::new);
+        return roomRepository.findByIsActiveTrue(pageable).map(RoomDTO::new);
     }
 
     @Transactional(readOnly = true)
     public RoomDTO findById(Long id) {
-        Room entity = roomRepository.findActiveById(id).orElseThrow(() -> new ResourceNotFound("[!] -> Room not found!"));
+        Room entity = roomRepository.findByIdAndIsActiveTrue(id).orElseThrow(() -> new ResourceNotFoundException("[!] -> Room not found or inactive!"));
         return new RoomDTO(entity);
     }
 
@@ -37,8 +37,8 @@ public class RoomService {
 
     @Transactional
     public RoomDTO update(Long id, RoomDTO dto) {
-        Room entity = roomRepository.findActiveById(id)
-                .orElseThrow(() -> new ResourceNotFound("[!] -> Room not found or inactive!"));
+        Room entity = roomRepository.findByIdAndIsActiveTrue(id)
+                .orElseThrow(() -> new ResourceNotFoundException("[!] -> Room not found or inactive!"));
 
         copyDTOToEntity(dto, entity);
         entity = roomRepository.save(entity);
@@ -47,9 +47,9 @@ public class RoomService {
 
     @Transactional
     public void delete(Long id) {
-        Room room = roomRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFound("[!] -> Room not found!"));
-        room.setActive(false);
+        Room room = roomRepository.findByIdAndIsActiveTrue(id)
+                .orElseThrow(() -> new ResourceNotFoundException("[!] -> Room not found or inactive!"));
+        room.setIsActive(false);
         roomRepository.save(room);
     }
 
@@ -57,6 +57,7 @@ public class RoomService {
         if (dto.getDescription() != null) entity.setDescription(dto.getDescription());
         if (dto.getPrice() != null) entity.setPrice(dto.getPrice());
         if (dto.getImageUrl() != null) entity.setImageUrl(dto.getImageUrl());
+        entity.setIsActive(true);
     }
 
 }

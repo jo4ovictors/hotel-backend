@@ -3,10 +3,6 @@ package br.edu.ifmg.hotelbao.dtos;
 import br.edu.ifmg.hotelbao.entities.Stay;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.persistence.Column;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import org.springframework.hateoas.RepresentationModel;
 
 import java.math.BigDecimal;

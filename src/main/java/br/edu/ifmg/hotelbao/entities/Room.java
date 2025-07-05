@@ -15,20 +15,26 @@ public class Room {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String description;
 
-    @Column(precision = 10, scale = 2)
+    @Column(nullable = false, precision = 10, scale = 2)
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private BigDecimal price;
 
+    @Column(nullable = false)
     private String imageUrl;
-    private Boolean isActive = true;
-    private Instant createdAt;
-    private Instant updateAt;
 
-    public Room() {
-    }
+    @Column(nullable = false)
+    private Boolean isActive;
+
+    @Column(nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @Column(nullable = false)
+    private Instant updatedAt;
+
+    public Room() {}
 
     public Room(Long id, String description, BigDecimal price, String imageUrl) {
         this.id = id;
@@ -42,8 +48,9 @@ public class Room {
         this.description = entity.getDescription();
         this.price = entity.getPrice();
         this.imageUrl = entity.getImageUrl();
+        this.isActive = entity.getIsActive();
         this.createdAt = entity.getCreatedAt();
-        this.updateAt = entity.getUpdateAt();
+        this.updatedAt = entity.getUpdatedAt();
     }
 
     public Long getId() {
@@ -78,30 +85,32 @@ public class Room {
         this.imageUrl = imageUrl;
     }
 
+    public Boolean getIsActive() {
+        return isActive;
+    }
+
+    public void setIsActive(Boolean active) {
+        isActive = active;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public Boolean getActive() {
-        return isActive;
-    }
-
-    public void setActive(Boolean active) {
-        isActive = active;
+    public Instant getUpdatedAt() {
+        return updatedAt;
     }
 
     @PrePersist
     public void prePersist() {
-        this.createdAt = Instant.now();
-    }
-
-    public Instant getUpdateAt() {
-        return updateAt;
+        Instant now = Instant.now();
+        this.createdAt = now;
+        this.updatedAt = now;
     }
 
     @PreUpdate
     public void preUpdate() {
-        this.updateAt = Instant.now();
+        this.updatedAt = Instant.now();
     }
 
     @Override
@@ -123,7 +132,9 @@ public class Room {
                 ", price=" + price +
                 ", imageUrl='" + imageUrl + '\'' +
                 ", createdAt=" + createdAt +
-                ", updateAt=" + updateAt +
+                ", updatedAt=" + updatedAt +
                 '}';
     }
+
 }
+

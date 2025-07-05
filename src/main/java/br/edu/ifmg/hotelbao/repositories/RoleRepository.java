@@ -1,4 +1,4 @@
-package br.edu.ifmg.hotelbao.repository;
+package br.edu.ifmg.hotelbao.repositories;
 
 import br.edu.ifmg.hotelbao.entities.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
