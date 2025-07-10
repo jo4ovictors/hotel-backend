@@ -48,7 +48,7 @@ INSERT INTO tb_room (description, price, image_url, is_active, created_at, updat
 INSERT INTO tb_room (description, price, image_url, is_active, created_at, updated_at) VALUES ('Suíte Premium com decoração temática', 800.00, 'https://example.com/img8.jpg', true, NOW(), NOW());
 
 
-INSERT INTO tb_stay (user_id, room_id, check_in, check_out, price) VALUES (1, 1, '2025-06-01', '2025-06-02', 450.00);
+INSERT INTO tb_stay (user_id, room_id, check_in, check_out, price) VALUES (1, 1, '2026-06-01', '2026-06-02', 450.00);
 INSERT INTO tb_stay (user_id, room_id, check_in, check_out, price) VALUES (1, 2, '2025-06-10', '2025-06-12', 500.00);
 INSERT INTO tb_stay (user_id, room_id, check_in, check_out, price) VALUES (2, 1, '2025-06-15', '2025-06-16', 450.00);
 INSERT INTO tb_stay (user_id, room_id, check_in, check_out, price) VALUES (3, 3, '2025-06-20', '2025-06-21', 600.00);
